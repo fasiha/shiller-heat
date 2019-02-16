@@ -279,13 +279,17 @@ function horizonToTSV(y) {
     return d + "\t" + x;
 }
 exports.horizonToTSV = horizonToTSV;
-function horizonReturns(aoa, nyears) {
+function horizonReturns(aoa, nyears, f) {
     if (nyears === void 0) { nyears = 10; }
+    if (f === void 0) { f = undefined; }
+    if (typeof f === 'undefined') {
+        f = dollarCostAverageCPIBetween;
+    }
     var months = nyears * 12;
     var lastStart = aoa.length - months;
     var ret = [];
     for (var start = 0; start < lastStart; ++start) {
-        var xirr_1 = dollarCostAverageCPIBetween(aoa, start, start + months);
+        var xirr_1 = f(aoa, start, start + months);
         ret.push({ starting: mdToDate(aoa[start]), xirr: xirr_1 });
     }
     return ret;

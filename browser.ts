@@ -1,5 +1,16 @@
 import fetchPonyfill from 'fetch-ponyfill';
-import {arrayBufferToWorkbook, getRawData, horizonReturns, MonthlyData, parse, SHILLER_IE_XLS_URL} from './index';
+
+import {
+  arrayBufferToWorkbook,
+  // dollarCostAverageBetween,
+  dollarCostAverageCPIBetween,
+  getRawData,
+  horizonReturns,
+  MonthlyData,
+  parse,
+  SHILLER_IE_XLS_URL
+} from './index';
+
 var Plotly = require('plotly.js-basic-dist');
 var median = require('median-quickselect');
 
@@ -24,7 +35,7 @@ export async function generateAllData() {
     }
   }
 
-  return [10, 25, 50].map(years => ({years, returns: horizonReturns(aoa, years)}));
+  return [10, 25, 50].map(years => ({years, returns: horizonReturns(aoa, years, dollarCostAverageCPIBetween)}));
 }
 
 export async function render() {

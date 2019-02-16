@@ -215,12 +215,13 @@ export function horizonToTSV(y: Horizon) {
   return `${d}\t${x}`;
 }
 
-export function horizonReturns(aoa: MonthlyData[], nyears = 10) {
+export function horizonReturns(aoa: MonthlyData[], nyears = 10, f: any = undefined) {
+  if (typeof f === 'undefined') { f = dollarCostAverageCPIBetween; }
   let months = nyears * 12;
   let lastStart = aoa.length - months;
   let ret: Horizon[] = [];
   for (let start = 0; start < lastStart; ++start) {
-    let xirr = dollarCostAverageCPIBetween(aoa, start, start + months);
+    let xirr = f(aoa, start, start + months);
     ret.push({starting: mdToDate(aoa[start]), xirr});
   }
   return ret;
