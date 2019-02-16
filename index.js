@@ -70,7 +70,7 @@ var fetch_ponyfill_1 = __importDefault(require("fetch-ponyfill"));
 var _a = fetch_ponyfill_1.default(), fetch = _a.fetch, Request = _a.Request, Response = _a.Response, Headers = _a.Headers;
 var xlsx_1 = __importDefault(require("xlsx"));
 var xirr = require('xirr');
-var SHILLER_IE_XLSX_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
+var SHILLER_IE_XLS_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
 var DATA_SHEETNAME = 'Data';
 var HEADER_ROW_A1 = '8';
 var HEADER_DATE = 'Date';
@@ -138,11 +138,9 @@ function mdToDate(row, day) {
  * dividends at the end of the month. Then eventually you sell at the first of the month of `aoa[sellIdx]`.
  *
  * This is the dumbest investment scheme: buy a share, save the dividends as cash, and sell.
- * @param aoa
- * @param buyIdx
- * @param sellIdx
  */
-function lumpBetween(aoa, buyIdx, sellIdx) {
+function lumpBetween(aoa, buyIdx, sellIdx, verbose) {
+    if (verbose === void 0) { verbose = false; }
     if (buyIdx >= sellIdx) {
         throw new Error('must sell strictly after buying');
     }
@@ -162,7 +160,8 @@ function lumpBetween(aoa, buyIdx, sellIdx) {
 }
 exports.lumpBetween = lumpBetween;
 function roundCents(n) { return Math.floor(n * 100) / 100; }
-function reinvestBetween(aoa, buyIdx, sellIdx) {
+function reinvestBetween(aoa, buyIdx, sellIdx, verbose) {
+    if (verbose === void 0) { verbose = false; }
     if (buyIdx >= sellIdx) {
         throw new Error('must sell strictly after buying');
     }
@@ -182,11 +181,13 @@ function reinvestBetween(aoa, buyIdx, sellIdx) {
     transactions.push({ amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28) });
     // Sell at the beginning of the final month
     transactions.push({ amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx]) });
-    console.log(transactions, '# shares', sharesOwned);
+    if (verbose)
+        console.log(transactions, '# shares', sharesOwned);
     return xirr(transactions);
 }
 exports.reinvestBetween = reinvestBetween;
-function dollarCostAverageBetween(aoa, buyIdx, sellIdx) {
+function dollarCostAverageBetween(aoa, buyIdx, sellIdx, verbose) {
+    if (verbose === void 0) { verbose = false; }
     if (buyIdx >= sellIdx) {
         throw new Error('must sell strictly after buying');
     }
@@ -206,7 +207,8 @@ function dollarCostAverageBetween(aoa, buyIdx, sellIdx) {
     transactions.push({ amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28) });
     // Sell at the beginning of the final month
     transactions.push({ amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx]) });
-    console.log(transactions, '# shares', sharesOwned);
+    if (verbose)
+        console.log(transactions, '# shares', sharesOwned);
     return xirr(transactions);
 }
 exports.dollarCostAverageBetween = dollarCostAverageBetween;
@@ -215,11 +217,9 @@ exports.dollarCostAverageBetween = dollarCostAverageBetween;
  *
  * The notion is that, your wages will sort-of track CPI (Consumer Price Index), and you allocate CPI
  * dollars each month to your retirement savings.
- * @param aoa
- * @param buyIdx
- * @param sellIdx
  */
-function dollarCostAverageCPIBetween(aoa, buyIdx, sellIdx) {
+function dollarCostAverageCPIBetween(aoa, buyIdx, sellIdx, verbose) {
+    if (verbose === void 0) { verbose = false; }
     if (buyIdx >= sellIdx) {
         throw new Error('must sell strictly after buying');
     }
@@ -243,7 +243,8 @@ function dollarCostAverageCPIBetween(aoa, buyIdx, sellIdx) {
     transactions.push({ amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28) });
     // Sell at the beginning of the final month
     transactions.push({ amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx]) });
-    console.log(transactions, '# shares', sharesOwned);
+    if (verbose)
+        console.log(transactions, '# shares', sharesOwned);
     return xirr(transactions);
 }
 exports.dollarCostAverageCPIBetween = dollarCostAverageCPIBetween;
@@ -266,10 +267,26 @@ function analyze(aoa) {
     console.log('# Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
     console.log("XIRR = " + f(dollarCostAverageCPIBetween(aoa, start, end)) + "%");
     // console.log(aoa[start], aoa[end])
+    var ten = NYearReturns(aoa, 10);
+    console.log('# Ten year horizons');
+    console.log(ten.slice(0, 20));
+    console.log(ten.slice(-20));
 }
 exports.analyze = analyze;
+function NYearReturns(aoa, n) {
+    if (n === void 0) { n = 10; }
+    var months = n * 12;
+    var lastStart = aoa.length - months;
+    var ret = [];
+    for (var start = 0; start < lastStart; ++start) {
+        var xirr_1 = dollarCostAverageCPIBetween(aoa, start, start + months);
+        ret.push({ starting: mdToDate(aoa[start]), xirr: xirr_1 });
+    }
+    return ret;
+}
+exports.NYearReturns = NYearReturns;
 function getRawData(url) {
-    if (url === void 0) { url = SHILLER_IE_XLSX_URL; }
+    if (url === void 0) { url = SHILLER_IE_XLS_URL; }
     return __awaiter(this, void 0, void 0, function () {
         var _a, _b, _c;
         return __generator(this, function (_d) {
@@ -285,11 +302,13 @@ function getRawData(url) {
 }
 exports.getRawData = getRawData;
 if (module === require.main) {
+    var xls_1 = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
     (function () { return __awaiter(_this, void 0, void 0, function () {
-        var w;
+        var w, aoa;
         return __generator(this, function (_a) {
-            w = xlsx_1.default.readFile('ie_data.xls');
-            analyze(parse(w));
+            w = xlsx_1.default.readFile(xls_1);
+            aoa = parse(w);
+            analyze(aoa);
             return [2 /*return*/];
         });
     }); })();

@@ -4,7 +4,7 @@ const {fetch, Request, Response, Headers} = fetchPonyfill();
 import XLSX from 'xlsx';
 const xirr = require('xirr');
 
-const SHILLER_IE_XLSX_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
+const SHILLER_IE_XLS_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
 const DATA_SHEETNAME = 'Data';
 
 const HEADER_ROW_A1 = '8';
@@ -73,11 +73,8 @@ type Transaction = {
  * dividends at the end of the month. Then eventually you sell at the first of the month of `aoa[sellIdx]`.
  *
  * This is the dumbest investment scheme: buy a share, save the dividends as cash, and sell.
- * @param aoa
- * @param buyIdx
- * @param sellIdx
  */
-export function lumpBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number): number {
+export function lumpBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number, verbose = false): number {
   if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
   if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
 
@@ -96,7 +93,7 @@ export function lumpBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number)
 
 function roundCents(n: number) { return Math.floor(n * 100) / 100; }
 
-export function reinvestBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number) {
+export function reinvestBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number, verbose = false) {
   if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
   if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
 
@@ -116,11 +113,11 @@ export function reinvestBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: num
 
   // Sell at the beginning of the final month
   transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
-  console.log(transactions, '# shares', sharesOwned);
+  if (verbose) console.log(transactions, '# shares', sharesOwned);
   return xirr(transactions);
 }
 
-export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number) {
+export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number, verbose = false) {
   if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
   if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
 
@@ -141,7 +138,7 @@ export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sel
 
   // Sell at the beginning of the final month
   transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
-  console.log(transactions, '# shares', sharesOwned);
+  if (verbose) console.log(transactions, '# shares', sharesOwned);
   return xirr(transactions);
 }
 
@@ -150,11 +147,8 @@ export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sel
  *
  * The notion is that, your wages will sort-of track CPI (Consumer Price Index), and you allocate CPI
  * dollars each month to your retirement savings.
- * @param aoa
- * @param buyIdx
- * @param sellIdx
  */
-export function dollarCostAverageCPIBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number) {
+export function dollarCostAverageCPIBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number, verbose = false) {
   if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
   if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
 
@@ -179,7 +173,7 @@ export function dollarCostAverageCPIBetween(aoa: MonthlyData[], buyIdx: number, 
 
   // Sell at the beginning of the final month
   transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
-  console.log(transactions, '# shares', sharesOwned);
+  if (verbose) console.log(transactions, '# shares', sharesOwned);
   return xirr(transactions);
 }
 
@@ -203,15 +197,33 @@ export function analyze(aoa: MonthlyData[]) {
   console.log('# Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
   console.log(`XIRR = ${f(dollarCostAverageCPIBetween(aoa, start, end))}%`);
   // console.log(aoa[start], aoa[end])
+
+  let ten = NYearReturns(aoa, 10);
+  console.log('# Ten year horizons')
+  console.log(ten.slice(0, 20))
+  console.log(ten.slice(-20))
 }
 
-export async function getRawData(url = SHILLER_IE_XLSX_URL) {
+export function NYearReturns(aoa: MonthlyData[], n = 10) {
+  let months = n * 12;
+  let lastStart = aoa.length - months;
+  let ret: {starting: Date, xirr: number}[] = [];
+  for (let start = 0; start < lastStart; ++start) {
+    let xirr = dollarCostAverageCPIBetween(aoa, start, start + months);
+    ret.push({starting: mdToDate(aoa[start]), xirr});
+  }
+  return ret;
+}
+
+export async function getRawData(url = SHILLER_IE_XLS_URL) {
   return XLSX.read(new Uint8Array(await fetch(url).then(x => x.arrayBuffer())), {type: "array"});
 }
 
 if (module === require.main) {
+  const xls = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
   (async () => {
-    let w = XLSX.readFile('ie_data.xls');
-    analyze(parse(w));
+    let w = XLSX.readFile(xls);
+    let aoa = parse(w);
+    analyze(aoa);
   })();
 }
