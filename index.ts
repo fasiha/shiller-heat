@@ -220,10 +220,23 @@ export async function getRawData(url = SHILLER_IE_XLS_URL) {
 }
 
 if (module === require.main) {
-  const xls = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
+  var {existsSync, readFileSync, writeFileSync} = require('fs');
+  const xlsfile = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
+  const jsonfile = xlsfile + '.json';
   (async () => {
-    let w = XLSX.readFile(xls);
-    let aoa = parse(w);
+    let aoa: MonthlyData[] = [];
+    if (existsSync(jsonfile)) {
+      aoa = JSON.parse(readFileSync(jsonfile, 'utf8'))
+    } else {
+      let workbook: XLSX.WorkBook;
+      if (existsSync(xlsfile)) {
+        workbook = XLSX.readFile(xlsfile);
+      } else {
+        workbook = await getRawData();
+      }
+      aoa = parse(workbook);
+      writeFileSync(jsonfile, JSON.stringify(aoa));
+    }
     analyze(aoa);
   })();
 }

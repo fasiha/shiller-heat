@@ -302,14 +302,35 @@ function getRawData(url) {
 }
 exports.getRawData = getRawData;
 if (module === require.main) {
-    var xls_1 = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
+    var _b = require('fs'), existsSync = _b.existsSync, readFileSync = _b.readFileSync, writeFileSync = _b.writeFileSync;
+    var xlsfile_1 = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
+    var jsonfile_1 = xlsfile_1 + '.json';
     (function () { return __awaiter(_this, void 0, void 0, function () {
-        var w, aoa;
+        var aoa, workbook;
         return __generator(this, function (_a) {
-            w = xlsx_1.default.readFile(xls_1);
-            aoa = parse(w);
-            analyze(aoa);
-            return [2 /*return*/];
+            switch (_a.label) {
+                case 0:
+                    aoa = [];
+                    if (!existsSync(jsonfile_1)) return [3 /*break*/, 1];
+                    aoa = JSON.parse(readFileSync(jsonfile_1, 'utf8'));
+                    return [3 /*break*/, 5];
+                case 1:
+                    workbook = void 0;
+                    if (!existsSync(xlsfile_1)) return [3 /*break*/, 2];
+                    workbook = xlsx_1.default.readFile(xlsfile_1);
+                    return [3 /*break*/, 4];
+                case 2: return [4 /*yield*/, getRawData()];
+                case 3:
+                    workbook = _a.sent();
+                    _a.label = 4;
+                case 4:
+                    aoa = parse(workbook);
+                    writeFileSync(jsonfile_1, JSON.stringify(aoa));
+                    _a.label = 5;
+                case 5:
+                    analyze(aoa);
+                    return [2 /*return*/];
+            }
         });
     }); })();
 }
