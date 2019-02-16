@@ -207,6 +207,7 @@ export function analyze(aoa: MonthlyData[]) {
 }
 export type Horizon = {
   starting: Date,
+  ending: Date,
   xirr: number,
 };
 export function horizonToTSV(y: Horizon) {
@@ -222,7 +223,7 @@ export function horizonReturns(aoa: MonthlyData[], nyears = 10, f: any = undefin
   let ret: Horizon[] = [];
   for (let start = 0; start < lastStart; ++start) {
     let xirr = f(aoa, start, start + months);
-    ret.push({starting: mdToDate(aoa[start]), xirr});
+    ret.push({starting: mdToDate(aoa[start]), ending: mdToDate(aoa[start + months]), xirr});
   }
   return ret;
 }

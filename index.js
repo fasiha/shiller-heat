@@ -290,7 +290,7 @@ function horizonReturns(aoa, nyears, f) {
     var ret = [];
     for (var start = 0; start < lastStart; ++start) {
         var xirr_1 = f(aoa, start, start + months);
-        ret.push({ starting: mdToDate(aoa[start]), xirr: xirr_1 });
+        ret.push({ starting: mdToDate(aoa[start]), ending: mdToDate(aoa[start + months]), xirr: xirr_1 });
     }
     return ret;
 }

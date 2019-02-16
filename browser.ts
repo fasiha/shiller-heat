@@ -42,7 +42,7 @@ export async function render() {
   let data = await generateAllData();
   let traces = data.map((horizon, hidx) => {
     let ret = horizon.returns;
-    let x = ret.map(h => h.starting);
+    let x = ret.map(h => h.ending);
     let y = ret.map(h => h.xirr * 100);
     let medianReturn: number = median(y);
     return {
@@ -53,7 +53,7 @@ export async function render() {
     };
   });
   let title = {text: 'S&P500: monthly dollar-cost-averaging $CPI, reinvesting dividends, before selling everything'};
-  let xaxis = {title: {text: 'First investment'}};
+  let xaxis = {title: {text: 'Sell date'}};
   let yaxis = {title: {text: 'Annualized rate of return (%)'}};
   let domNode = document.getElementById('tester');
   Plotly.plot(domNode, traces, {title, xaxis, yaxis});
