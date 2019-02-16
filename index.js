@@ -76,6 +76,7 @@ var HEADER_ROW_A1 = '8';
 var HEADER_DATE = 'Date';
 var HEADER_P = 'P';
 var HEADER_D = 'D';
+var HEADER_CPI = 'CPI';
 function decimalDateToYearMonth(dec) {
     var _a = __read(dec.split('.'), 2), y = _a[0], m = _a[1];
     if (!m || !y || y.length === 0 || m.length === 0) {
@@ -88,8 +89,8 @@ function parse(workbook) {
         throw new Error('unexpected name of third sheet');
     }
     var data = workbook.Sheets[DATA_SHEETNAME];
-    var headerRow = 'ABC'.split('').map(function (col) { return col + HEADER_ROW_A1; }).map(function (a1) { return data[a1].v; });
-    if (headerRow.join(',') !== [HEADER_DATE, HEADER_P, HEADER_D].join(',')) {
+    var headerRow = 'ABCE'.split('').map(function (col) { return col + HEADER_ROW_A1; }).map(function (a1) { return data[a1].v; });
+    if (headerRow.join(',') !== [HEADER_DATE, HEADER_P, HEADER_D, HEADER_CPI].join(',')) {
         throw new Error('unexpected header on row ' + HEADER_ROW_A1);
     }
     var arr = [];
@@ -98,7 +99,8 @@ function parse(workbook) {
         var _a = __read(decimalDateToYearMonth(data['A' + rownum].w), 2), year = _a[0], month = _a[1];
         var price = data['B' + rownum].v;
         var div = data['C' + rownum].v;
-        arr.push({ year: year, month: month, price: price, div: div });
+        var cpi = data['E' + rownum].v;
+        arr.push({ year: year, month: month, price: price, div: div, cpi: cpi });
         rownum++;
     }
     return arr;

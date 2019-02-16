@@ -11,12 +11,14 @@ const HEADER_ROW_A1 = '8';
 const HEADER_DATE = 'Date';
 const HEADER_P = 'P';
 const HEADER_D = 'D';
+const HEADER_CPI = 'CPI';
 
 type MonthlyData = {
   year: number,
   month: number,
   price: number,
-  div: number
+  div: number,
+  cpi: number
 };
 
 function decimalDateToYearMonth(dec: string): [number, number] {
@@ -29,9 +31,9 @@ export function parse(workbook: XLSX.WorkBook) {
   if (workbook.SheetNames[2] !== DATA_SHEETNAME) { throw new Error('unexpected name of third sheet'); }
 
   let data = workbook.Sheets[DATA_SHEETNAME];
-  let headerRow = 'ABC'.split('').map(col => col + HEADER_ROW_A1).map(a1 => data[a1].v);
+  let headerRow = 'ABCE'.split('').map(col => col + HEADER_ROW_A1).map(a1 => data[a1].v);
 
-  if (headerRow.join(',') !== [HEADER_DATE, HEADER_P, HEADER_D].join(',')) {
+  if (headerRow.join(',') !== [HEADER_DATE, HEADER_P, HEADER_D, HEADER_CPI].join(',')) {
     throw new Error('unexpected header on row ' + HEADER_ROW_A1);
   }
 
@@ -41,7 +43,8 @@ export function parse(workbook: XLSX.WorkBook) {
     let [year, month] = decimalDateToYearMonth(data['A' + rownum].w)
     let price: number = data['B' + rownum].v;
     let div: number = data['C' + rownum].v;
-    arr.push({year, month, price, div});
+    let cpi: number = data['E' + rownum].v;
+    arr.push({year, month, price, div, cpi});
     rownum++;
   }
   return arr;
