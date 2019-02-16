@@ -68,19 +68,49 @@ type Transaction = {
 /**
  * The convention here is that: you buy at the beginning of the month indicated by `aoa[buyIdx]`. You collect
  * dividends at the end of the month. Then eventually you sell at the first of the month of `aoa[sellIdx]`.
+ *
+ * This is the dumbest investment scheme: buy a share, save the dividends as cash, and sell.
  * @param aoa
  * @param buyIdx
  * @param sellIdx
  */
-function lumpBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number): number {
+export function lumpBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number): number {
   if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
   if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
+
   // Buy first of month
   let transactions: Transaction[] = [{amount: -aoa[buyIdx].price, when: mdToDate(aoa[buyIdx])}];
+
   // Collect dividends every month-end (I assume this is how Shiller data works)
   for (let n = buyIdx; n < sellIdx; ++n) { transactions.push({amount: aoa[n].div, when: mdToDate(aoa[n], 28)}); }
+
   // Sell at the beginning of the final month
   transactions.push({amount: aoa[sellIdx].price, when: mdToDate(aoa[sellIdx])});
+
+  console.log(transactions);
+  return xirr(transactions);
+}
+
+export function reinvestBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number) {
+  if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
+  if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
+
+  // Buy first of month
+  let transactions: Transaction[] = [{amount: -aoa[buyIdx].price, when: mdToDate(aoa[buyIdx])}];
+  let sharesOwned = 1;
+
+  // reinvest dividends received month-end at the beginning of the next month
+  for (let n = buyIdx; n < sellIdx - 1; ++n) {
+    let divToday = aoa[n].div;               // dollars
+    let priceTomorrow = aoa[n + 1].price;    // dollars per share
+    sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
+  }
+
+  // collect final month's dividend as cash
+  transactions.push({amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28)});
+
+  // Sell at the beginning of the final month
+  transactions.push({amount: aoa[sellIdx].price * sharesOwned, when: mdToDate(aoa[sellIdx])});
   console.log(transactions);
   return xirr(transactions);
 }
@@ -91,12 +121,12 @@ export function analyze(aoa: MonthlyData[]) {
   let start = 0;
   let end = 12;
   console.log(lumpBetween(aoa, start, end));
+  console.log(reinvestBetween(aoa, start, end));
   console.log(aoa[start], aoa[end])
 }
 
 export async function getRawData(url = SHILLER_IE_XLSX_URL) {
-  let p = await fetch(url).then(x => x.arrayBuffer());
-  return XLSX.read(new Uint8Array(p), {type: "array"});
+  return XLSX.read(new Uint8Array(await fetch(url).then(x => x.arrayBuffer())), {type: "array"});
 }
 
 if (module === require.main) {

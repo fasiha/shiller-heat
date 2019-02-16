@@ -134,6 +134,8 @@ function mdToDate(row, day) {
 /**
  * The convention here is that: you buy at the beginning of the month indicated by `aoa[buyIdx]`. You collect
  * dividends at the end of the month. Then eventually you sell at the first of the month of `aoa[sellIdx]`.
+ *
+ * This is the dumbest investment scheme: buy a share, save the dividends as cash, and sell.
  * @param aoa
  * @param buyIdx
  * @param sellIdx
@@ -156,6 +158,31 @@ function lumpBetween(aoa, buyIdx, sellIdx) {
     console.log(transactions);
     return xirr(transactions);
 }
+exports.lumpBetween = lumpBetween;
+function reinvestBetween(aoa, buyIdx, sellIdx) {
+    if (buyIdx >= sellIdx) {
+        throw new Error('must sell strictly after buying');
+    }
+    if (buyIdx < 0 || sellIdx >= aoa.length) {
+        throw new Error('buy and sell indexes out of bounds');
+    }
+    // Buy first of month
+    var transactions = [{ amount: -aoa[buyIdx].price, when: mdToDate(aoa[buyIdx]) }];
+    var sharesOwned = 1;
+    // reinvest dividends received month-end at the beginning of the next month
+    for (var n = buyIdx; n < sellIdx - 1; ++n) {
+        var divToday = aoa[n].div; // dollars
+        var priceTomorrow = aoa[n + 1].price; // dollars per share
+        sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
+    }
+    // collect final month's dividend as cash
+    transactions.push({ amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28) });
+    // Sell at the beginning of the final month
+    transactions.push({ amount: aoa[sellIdx].price * sharesOwned, when: mdToDate(aoa[sellIdx]) });
+    console.log(transactions);
+    return xirr(transactions);
+}
+exports.reinvestBetween = reinvestBetween;
 function analyze(aoa) {
     var _a = minmax(aoa.map(function (_a) {
         var price = _a.price, div = _a.div;
@@ -165,19 +192,21 @@ function analyze(aoa) {
     var start = 0;
     var end = 12;
     console.log(lumpBetween(aoa, start, end));
+    console.log(reinvestBetween(aoa, start, end));
     console.log(aoa[start], aoa[end]);
 }
 exports.analyze = analyze;
 function getRawData(url) {
     if (url === void 0) { url = SHILLER_IE_XLSX_URL; }
     return __awaiter(this, void 0, void 0, function () {
-        var p;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, fetch(url).then(function (x) { return x.arrayBuffer(); })];
-                case 1:
-                    p = _a.sent();
-                    return [2 /*return*/, xlsx_1.default.read(new Uint8Array(p), { type: "array" })];
+        var _a, _b, _c;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
+                case 0:
+                    _b = (_a = xlsx_1.default).read;
+                    _c = Uint8Array.bind;
+                    return [4 /*yield*/, fetch(url).then(function (x) { return x.arrayBuffer(); })];
+                case 1: return [2 /*return*/, _b.apply(_a, [new (_c.apply(Uint8Array, [void 0, _d.sent()]))(), { type: "array" }])];
             }
         });
     });
