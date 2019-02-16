@@ -145,6 +145,44 @@ export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sel
   return xirr(transactions);
 }
 
+/**
+ * Each month, invest the CPI that month in dollars in the stock market. Reinvest dividends.
+ *
+ * The notion is that, your wages will sort-of track CPI (Consumer Price Index), and you allocate CPI
+ * dollars each month to your retirement savings.
+ * @param aoa
+ * @param buyIdx
+ * @param sellIdx
+ */
+export function dollarCostAverageCPIBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number) {
+  if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
+  if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
+
+  // Invest $CPI at the beginning of the month
+  let transactions: Transaction[] = [{amount: -aoa[buyIdx].cpi, when: mdToDate(aoa[buyIdx])}];
+  let sharesOwned = aoa[buyIdx].cpi / aoa[buyIdx].price;
+
+  for (let n = buyIdx; n < sellIdx - 1; ++n) {
+    // reinvest dividends at the end of each month
+    const divToday = aoa[n].div;             // dollars
+    const priceTomorrow = aoa[n + 1].price;  // dollars per share
+    sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
+
+    // invest $CPI (of the next month) at the start of the next month
+    const cpiTomorrow = aoa[n + 1].cpi;
+    transactions.push({amount: -cpiTomorrow, when: mdToDate(aoa[n + 1])});
+    sharesOwned += cpiTomorrow / priceTomorrow;
+  }
+
+  // Keep final dividend payment at the end of the month as cash
+  transactions.push({amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28)});
+
+  // Sell at the beginning of the final month
+  transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
+  console.log(transactions, '# shares', sharesOwned);
+  return xirr(transactions);
+}
+
 export function analyze(aoa: MonthlyData[]) {
   let {min: worstDivRate, max: bestDivRate} = minmax(aoa.map(({price, div}) => div / price));
   let f = (n: number) => (n * 100).toFixed(3);
@@ -161,6 +199,9 @@ export function analyze(aoa: MonthlyData[]) {
 
   console.log('# Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
   console.log(`XIRR = ${f(dollarCostAverageBetween(aoa, start, end))}%`);
+
+  console.log('# Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
+  console.log(`XIRR = ${f(dollarCostAverageCPIBetween(aoa, start, end))}%`);
   // console.log(aoa[start], aoa[end])
 }
 
