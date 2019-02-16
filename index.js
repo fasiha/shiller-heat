@@ -63,14 +63,12 @@ var __values = (this && this.__values) || function (o) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-// require('isomorphic-fetch');
 var fetch_ponyfill_1 = __importDefault(require("fetch-ponyfill"));
-var _a = fetch_ponyfill_1.default(), fetch = _a.fetch, Request = _a.Request, Response = _a.Response, Headers = _a.Headers;
 var xlsx_1 = __importDefault(require("xlsx"));
+var fetch = fetch_ponyfill_1.default().fetch;
 var xirr = require('xirr');
-var SHILLER_IE_XLS_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
+exports.SHILLER_IE_XLS_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
 var DATA_SHEETNAME = 'Data';
 var HEADER_ROW_A1 = '8';
 var HEADER_DATE = 'Date';
@@ -131,7 +129,7 @@ function minmax(arr) {
 }
 function mdToDate(row, day) {
     if (day === void 0) { day = 1; }
-    return new Date(row.year, row.month - 1, day);
+    return new Date(Date.UTC(row.year, row.month - 1, day));
 }
 /**
  * The convention here is that: you buy at the beginning of the month indicated by `aoa[buyIdx]`. You collect
@@ -258,24 +256,32 @@ function analyze(aoa) {
     console.log("Worst and best dividend rates: " + f(worstDivRate) + "% and " + f(bestDivRate) + "%");
     var start = 0;
     var end = 12;
-    console.log('# Buy once, sell later, keep dividends as cash');
+    console.log('## Buy once, sell later, keep dividends as cash');
     console.log("XIRR = " + f(lumpBetween(aoa, start, end)) + "%");
-    console.log('# Buy once, reinvest dividends, sell later');
+    console.log('## Buy once, reinvest dividends, sell later');
     console.log("XIRR = " + f(reinvestBetween(aoa, start, end)) + "%");
-    console.log('# Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
+    console.log('## Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
     console.log("XIRR = " + f(dollarCostAverageBetween(aoa, start, end)) + "%");
-    console.log('# Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
+    console.log('## Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
     console.log("XIRR = " + f(dollarCostAverageCPIBetween(aoa, start, end)) + "%");
     // console.log(aoa[start], aoa[end])
-    var ten = NYearReturns(aoa, 10);
-    console.log('# Ten year horizons');
-    console.log(ten.slice(0, 20));
-    console.log(ten.slice(-20));
+    console.log('## Ten year horizons');
+    horizonReturns(aoa, 10).forEach(function (y) { return console.log(horizonToTSV(y)); });
+    console.log('## 30 year horizons');
+    horizonReturns(aoa, 30).forEach(function (y) { return console.log(horizonToTSV(y)); });
+    console.log('## 50 year horizons');
+    horizonReturns(aoa, 50).forEach(function (y) { return console.log(horizonToTSV(y)); });
 }
 exports.analyze = analyze;
-function NYearReturns(aoa, n) {
-    if (n === void 0) { n = 10; }
-    var months = n * 12;
+function horizonToTSV(y) {
+    var d = y.starting.toISOString().split('T')[0];
+    var x = y.xirr;
+    return d + "\t" + x;
+}
+exports.horizonToTSV = horizonToTSV;
+function horizonReturns(aoa, nyears) {
+    if (nyears === void 0) { nyears = 10; }
+    var months = nyears * 12;
     var lastStart = aoa.length - months;
     var ret = [];
     for (var start = 0; start < lastStart; ++start) {
@@ -284,53 +290,24 @@ function NYearReturns(aoa, n) {
     }
     return ret;
 }
-exports.NYearReturns = NYearReturns;
+exports.horizonReturns = horizonReturns;
+function getArrayBuffer(url) {
+    if (url === void 0) { url = exports.SHILLER_IE_XLS_URL; }
+    return __awaiter(this, void 0, void 0, function () { return __generator(this, function (_a) {
+        return [2 /*return*/, fetch(url).then(function (x) { return x.arrayBuffer(); })];
+    }); });
+}
+function arrayBufferToWorkbook(buf) { return xlsx_1.default.read(new Uint8Array(buf), { type: "array" }); }
+exports.arrayBufferToWorkbook = arrayBufferToWorkbook;
 function getRawData(url) {
-    if (url === void 0) { url = SHILLER_IE_XLS_URL; }
-    return __awaiter(this, void 0, void 0, function () {
-        var _a, _b, _c;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
-                case 0:
-                    _b = (_a = xlsx_1.default).read;
-                    _c = Uint8Array.bind;
-                    return [4 /*yield*/, fetch(url).then(function (x) { return x.arrayBuffer(); })];
-                case 1: return [2 /*return*/, _b.apply(_a, [new (_c.apply(Uint8Array, [void 0, _d.sent()]))(), { type: "array" }])];
-            }
-        });
-    });
+    if (url === void 0) { url = exports.SHILLER_IE_XLS_URL; }
+    return __awaiter(this, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
+        switch (_b.label) {
+            case 0:
+                _a = arrayBufferToWorkbook;
+                return [4 /*yield*/, getArrayBuffer(url)];
+            case 1: return [2 /*return*/, _a.apply(void 0, [_b.sent()])];
+        }
+    }); });
 }
 exports.getRawData = getRawData;
-if (module === require.main) {
-    var _b = require('fs'), existsSync = _b.existsSync, readFileSync = _b.readFileSync, writeFileSync = _b.writeFileSync;
-    var xlsfile_1 = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
-    var jsonfile_1 = xlsfile_1 + '.json';
-    (function () { return __awaiter(_this, void 0, void 0, function () {
-        var aoa, workbook;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    aoa = [];
-                    if (!existsSync(jsonfile_1)) return [3 /*break*/, 1];
-                    aoa = JSON.parse(readFileSync(jsonfile_1, 'utf8'));
-                    return [3 /*break*/, 5];
-                case 1:
-                    workbook = void 0;
-                    if (!existsSync(xlsfile_1)) return [3 /*break*/, 2];
-                    workbook = xlsx_1.default.readFile(xlsfile_1);
-                    return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, getRawData()];
-                case 3:
-                    workbook = _a.sent();
-                    _a.label = 4;
-                case 4:
-                    aoa = parse(workbook);
-                    writeFileSync(jsonfile_1, JSON.stringify(aoa));
-                    _a.label = 5;
-                case 5:
-                    analyze(aoa);
-                    return [2 /*return*/];
-            }
-        });
-    }); })();
-}

@@ -1,10 +1,10 @@
-// require('isomorphic-fetch');
 import fetchPonyfill from 'fetch-ponyfill';
-const {fetch, Request, Response, Headers} = fetchPonyfill();
 import XLSX from 'xlsx';
+
+const {fetch} = fetchPonyfill();
 const xirr = require('xirr');
 
-const SHILLER_IE_XLS_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
+export const SHILLER_IE_XLS_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
 const DATA_SHEETNAME = 'Data';
 
 const HEADER_ROW_A1 = '8';
@@ -13,7 +13,7 @@ const HEADER_P = 'P';
 const HEADER_D = 'D';
 const HEADER_CPI = 'CPI';
 
-type MonthlyData = {
+export type MonthlyData = {
   year: number,
   month: number,
   price: number,
@@ -61,7 +61,7 @@ function minmax(arr: number[]) {
   return {min, max};
 }
 
-function mdToDate(row: MonthlyData, day = 1) { return new Date(row.year, row.month - 1, day); }
+function mdToDate(row: MonthlyData, day = 1) { return new Date(Date.UTC(row.year, row.month - 1, day)); }
 
 type Transaction = {
   amount: number,
@@ -185,29 +185,40 @@ export function analyze(aoa: MonthlyData[]) {
 
   let start = 0;
   let end = 12;
-  console.log('# Buy once, sell later, keep dividends as cash');
+  console.log('## Buy once, sell later, keep dividends as cash');
   console.log(`XIRR = ${f(lumpBetween(aoa, start, end))}%`);
 
-  console.log('# Buy once, reinvest dividends, sell later');
+  console.log('## Buy once, reinvest dividends, sell later');
   console.log(`XIRR = ${f(reinvestBetween(aoa, start, end))}%`);
 
-  console.log('# Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
+  console.log('## Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
   console.log(`XIRR = ${f(dollarCostAverageBetween(aoa, start, end))}%`);
 
-  console.log('# Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
+  console.log('## Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
   console.log(`XIRR = ${f(dollarCostAverageCPIBetween(aoa, start, end))}%`);
   // console.log(aoa[start], aoa[end])
 
-  let ten = NYearReturns(aoa, 10);
-  console.log('# Ten year horizons')
-  console.log(ten.slice(0, 20))
-  console.log(ten.slice(-20))
+  console.log('## Ten year horizons');
+  horizonReturns(aoa, 10).forEach(y => console.log(horizonToTSV(y)));
+  console.log('## 30 year horizons');
+  horizonReturns(aoa, 30).forEach(y => console.log(horizonToTSV(y)));
+  console.log('## 50 year horizons');
+  horizonReturns(aoa, 50).forEach(y => console.log(horizonToTSV(y)));
+}
+export type Horizon = {
+  starting: Date,
+  xirr: number,
+};
+export function horizonToTSV(y: Horizon) {
+  let d = y.starting.toISOString().split('T')[0];
+  let x = y.xirr;
+  return `${d}\t${x}`;
 }
 
-export function NYearReturns(aoa: MonthlyData[], n = 10) {
-  let months = n * 12;
+export function horizonReturns(aoa: MonthlyData[], nyears = 10) {
+  let months = nyears * 12;
   let lastStart = aoa.length - months;
-  let ret: {starting: Date, xirr: number}[] = [];
+  let ret: Horizon[] = [];
   for (let start = 0; start < lastStart; ++start) {
     let xirr = dollarCostAverageCPIBetween(aoa, start, start + months);
     ret.push({starting: mdToDate(aoa[start]), xirr});
@@ -215,28 +226,6 @@ export function NYearReturns(aoa: MonthlyData[], n = 10) {
   return ret;
 }
 
-export async function getRawData(url = SHILLER_IE_XLS_URL) {
-  return XLSX.read(new Uint8Array(await fetch(url).then(x => x.arrayBuffer())), {type: "array"});
-}
-
-if (module === require.main) {
-  var {existsSync, readFileSync, writeFileSync} = require('fs');
-  const xlsfile = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
-  const jsonfile = xlsfile + '.json';
-  (async () => {
-    let aoa: MonthlyData[] = [];
-    if (existsSync(jsonfile)) {
-      aoa = JSON.parse(readFileSync(jsonfile, 'utf8'))
-    } else {
-      let workbook: XLSX.WorkBook;
-      if (existsSync(xlsfile)) {
-        workbook = XLSX.readFile(xlsfile);
-      } else {
-        workbook = await getRawData();
-      }
-      aoa = parse(workbook);
-      writeFileSync(jsonfile, JSON.stringify(aoa));
-    }
-    analyze(aoa);
-  })();
-}
+async function getArrayBuffer(url = SHILLER_IE_XLS_URL) { return fetch(url).then(x => x.arrayBuffer()); }
+export function arrayBufferToWorkbook(buf: ArrayBuffer) { return XLSX.read(new Uint8Array(buf), {type: "array"}); }
+export async function getRawData(url = SHILLER_IE_XLS_URL) { return arrayBufferToWorkbook(await getArrayBuffer(url)); }
