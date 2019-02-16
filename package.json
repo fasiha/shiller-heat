@@ -8,7 +8,7 @@
     "build": "tsc -p .",
     "bundle": "browserify browser.js -o browser.bundle.js -s shiller",
     "min": "google-closure-compiler --js=browser.bundle.js --js_output_file=dist/browser.bundle.min.js",
-    "all": "npm build && npm bundle && npm min"
+    "all": "npm run build && npm run bundle && npm run min"
   },
   "keywords": [],
   "author": "Ahmed Fasih",
@@ -16,6 +16,7 @@
   "dependencies": {
     "browserify": "^16.2.3",
     "fetch-ponyfill": "^6.0.2",
+    "median-quickselect": "^1.0.1",
     "plotly.js-basic-dist": "^1.44.4",
     "xirr": "^1.0.3",
     "xlsx": "^0.14.1"

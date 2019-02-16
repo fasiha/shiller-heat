@@ -1,13 +1,15 @@
 import fetchPonyfill from 'fetch-ponyfill';
 import {arrayBufferToWorkbook, getRawData, horizonReturns, MonthlyData, parse, SHILLER_IE_XLS_URL} from './index';
 var Plotly = require('plotly.js-basic-dist');
+var median = require('median-quickselect');
 
 const {fetch} = fetchPonyfill();
 
 export async function generateAllData() {
   let aoa: MonthlyData[];
 
-  const xlsfile = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
+  const datapath = 'data/';
+  const xlsfile = datapath + SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
   const jsonfile = xlsfile + '.json';
 
   let jsonFetched = await fetch(jsonfile);
@@ -22,7 +24,7 @@ export async function generateAllData() {
     }
   }
 
-  return [10, 30, 50].map(years => ({years, returns: horizonReturns(aoa, years)}));
+  return [10, 25, 50].map(years => ({years, returns: horizonReturns(aoa, years)}));
 }
 
 export async function render() {
@@ -31,9 +33,15 @@ export async function render() {
     let ret = horizon.returns;
     let x = ret.map(h => h.starting);
     let y = ret.map(h => h.xirr * 100);
-    return {x, y, name: `${horizon.years}y`, line: {width: (1 + hidx) * (1 + hidx)}};
+    let medianReturn: number = median(y);
+    return {
+      x,
+      y,
+      name: `${horizon.years}y; median=${medianReturn.toFixed(1)}%`,
+      line: {width: (1 + hidx + (hidx > 2 ? 2 : 0))}
+    };
   });
-  let title = 'Monthly dollar-cost-averaging $CPI, reinvesting returns';
+  let title = 'S&P500: monthly dollar-cost-averaging $CPI, reinvesting dividends, before selling everything';
   let domNode = document.getElementById('tester');
   Plotly.plot(domNode, traces, {title});
 }
