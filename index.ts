@@ -91,6 +91,8 @@ export function lumpBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number)
   return xirr(transactions);
 }
 
+function roundCents(n: number) { return Math.floor(n * 100) / 100; }
+
 export function reinvestBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number) {
   if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
   if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
@@ -110,19 +112,53 @@ export function reinvestBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: num
   transactions.push({amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28)});
 
   // Sell at the beginning of the final month
-  transactions.push({amount: aoa[sellIdx].price * sharesOwned, when: mdToDate(aoa[sellIdx])});
-  console.log(transactions);
+  transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
+  console.log(transactions, '# shares', sharesOwned);
+  return xirr(transactions);
+}
+
+export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number) {
+  if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
+  if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
+
+  // Buy first of month
+  let transactions: Transaction[] = [{amount: -aoa[buyIdx].price, when: mdToDate(aoa[buyIdx])}];
+  let sharesOwned = 1;
+
+  for (let n = buyIdx; n < sellIdx - 1; ++n) {
+    let divToday = aoa[n].div;               // dollars
+    let priceTomorrow = aoa[n + 1].price;    // dollars per share
+    sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
+
+    transactions.push({amount: -priceTomorrow, when: mdToDate(aoa[n + 1])});
+    sharesOwned += 1;
+  }
+
+  transactions.push({amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28)});
+
+  // Sell at the beginning of the final month
+  transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
+  console.log(transactions, '# shares', sharesOwned);
   return xirr(transactions);
 }
 
 export function analyze(aoa: MonthlyData[]) {
   let {min: worstDivRate, max: bestDivRate} = minmax(aoa.map(({price, div}) => div / price));
-  console.log([worstDivRate, bestDivRate]);
+  let f = (n: number) => (n * 100).toFixed(3);
+  console.log('# Dividends')
+  console.log(`Worst and best dividend rates: ${f(worstDivRate)}% and ${f(bestDivRate)}%`);
+
   let start = 0;
   let end = 12;
-  console.log(lumpBetween(aoa, start, end));
-  console.log(reinvestBetween(aoa, start, end));
-  console.log(aoa[start], aoa[end])
+  console.log('# Buy once, sell later, keep dividends as cash');
+  console.log(`XIRR = ${f(lumpBetween(aoa, start, end))}%`);
+
+  console.log('# Buy once, reinvest dividends, sell later');
+  console.log(`XIRR = ${f(reinvestBetween(aoa, start, end))}%`);
+
+  console.log('# Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
+  console.log(`XIRR = ${f(dollarCostAverageBetween(aoa, start, end))}%`);
+  // console.log(aoa[start], aoa[end])
 }
 
 export async function getRawData(url = SHILLER_IE_XLSX_URL) {

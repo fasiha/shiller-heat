@@ -159,6 +159,7 @@ function lumpBetween(aoa, buyIdx, sellIdx) {
     return xirr(transactions);
 }
 exports.lumpBetween = lumpBetween;
+function roundCents(n) { return Math.floor(n * 100) / 100; }
 function reinvestBetween(aoa, buyIdx, sellIdx) {
     if (buyIdx >= sellIdx) {
         throw new Error('must sell strictly after buying');
@@ -178,22 +179,52 @@ function reinvestBetween(aoa, buyIdx, sellIdx) {
     // collect final month's dividend as cash
     transactions.push({ amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28) });
     // Sell at the beginning of the final month
-    transactions.push({ amount: aoa[sellIdx].price * sharesOwned, when: mdToDate(aoa[sellIdx]) });
-    console.log(transactions);
+    transactions.push({ amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx]) });
+    console.log(transactions, '# shares', sharesOwned);
     return xirr(transactions);
 }
 exports.reinvestBetween = reinvestBetween;
+function dollarCostAverageBetween(aoa, buyIdx, sellIdx) {
+    if (buyIdx >= sellIdx) {
+        throw new Error('must sell strictly after buying');
+    }
+    if (buyIdx < 0 || sellIdx >= aoa.length) {
+        throw new Error('buy and sell indexes out of bounds');
+    }
+    // Buy first of month
+    var transactions = [{ amount: -aoa[buyIdx].price, when: mdToDate(aoa[buyIdx]) }];
+    var sharesOwned = 1;
+    for (var n = buyIdx; n < sellIdx - 1; ++n) {
+        var divToday = aoa[n].div; // dollars
+        var priceTomorrow = aoa[n + 1].price; // dollars per share
+        sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
+        transactions.push({ amount: -priceTomorrow, when: mdToDate(aoa[n + 1]) });
+        sharesOwned += 1;
+    }
+    transactions.push({ amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28) });
+    // Sell at the beginning of the final month
+    transactions.push({ amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx]) });
+    console.log(transactions, '# shares', sharesOwned);
+    return xirr(transactions);
+}
+exports.dollarCostAverageBetween = dollarCostAverageBetween;
 function analyze(aoa) {
     var _a = minmax(aoa.map(function (_a) {
         var price = _a.price, div = _a.div;
         return div / price;
     })), worstDivRate = _a.min, bestDivRate = _a.max;
-    console.log([worstDivRate, bestDivRate]);
+    var f = function (n) { return (n * 100).toFixed(3); };
+    console.log('# Dividends');
+    console.log("Worst and best dividend rates: " + f(worstDivRate) + "% and " + f(bestDivRate) + "%");
     var start = 0;
     var end = 12;
-    console.log(lumpBetween(aoa, start, end));
-    console.log(reinvestBetween(aoa, start, end));
-    console.log(aoa[start], aoa[end]);
+    console.log('# Buy once, sell later, keep dividends as cash');
+    console.log("XIRR = " + f(lumpBetween(aoa, start, end)) + "%");
+    console.log('# Buy once, reinvest dividends, sell later');
+    console.log("XIRR = " + f(reinvestBetween(aoa, start, end)) + "%");
+    console.log('# Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
+    console.log("XIRR = " + f(dollarCostAverageBetween(aoa, start, end)) + "%");
+    // console.log(aoa[start], aoa[end])
 }
 exports.analyze = analyze;
 function getRawData(url) {
