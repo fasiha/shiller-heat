@@ -41,7 +41,9 @@ export async function render() {
       line: {width: (1 + hidx + (hidx > 2 ? 2 : 0))}
     };
   });
-  let title = 'S&P500: monthly dollar-cost-averaging $CPI, reinvesting dividends, before selling everything';
+  let title = {text: 'S&P500: monthly dollar-cost-averaging $CPI, reinvesting dividends, before selling everything'};
+  let xaxis = {title: {text: 'First investment'}};
+  let yaxis = {title: {text: 'Annualized rate of return (%)'}};
   let domNode = document.getElementById('tester');
-  Plotly.plot(domNode, traces, {title});
+  Plotly.plot(domNode, traces, {title, xaxis, yaxis});
 }
