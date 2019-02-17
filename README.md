@@ -48,3 +48,5 @@ The story in Japan is different but informative. The Japan bubble burst in the e
 I am not personally sure how widespread the Bogle–Vanguard conventional wisdom on retirement savings is in Japan, so I’m not sure how many Japanese retirees looked back on a lifetime of saving amounting to -2% to +2%, but I think it is instructive to consider the possibility of Japan’s case happening in America. The S&P 500 has *never* seen a ten-year period where all forty-five-year lifetimes were ≤2% (it came close during World War II), but its likelihood is non-negligible, and I wonder if enough investors saving for retirement are weighing these possibilities.
 
 Or even these realities.
+
+—Ahmed Fasih ([contact me](https://fasiha.github.io/#contact); [see source code](https://github.com/fasiha/shiller-heat))
