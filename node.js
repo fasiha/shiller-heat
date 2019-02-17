@@ -46,7 +46,7 @@ if (module === require.main) {
     var xlsfile_1 = index_1.SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
     var jsonfile_1 = xlsfile_1 + '.json';
     (function () { return __awaiter(_this, void 0, void 0, function () {
-        var aoa, workbook;
+        var aoa, workbook, y1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -68,7 +68,8 @@ if (module === require.main) {
                     writeFileSync(jsonfile_1, JSON.stringify(aoa));
                     _a.label = 5;
                 case 5:
-                    index_1.analyze(aoa);
+                    y1 = index_1.horizonReturns(aoa, 1, index_1.dollarCostAverageCPIBetween);
+                    y1.forEach(function (h) { return console.log(index_1.horizonToTSV(h)); });
                     return [2 /*return*/];
             }
         });

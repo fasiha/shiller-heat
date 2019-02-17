@@ -173,8 +173,9 @@ export function dollarCostAverageCPIBetween(aoa: MonthlyData[], buyIdx: number, 
 
   // Sell at the beginning of the final month
   transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
-  if (verbose) console.log(transactions, '# shares', sharesOwned);
-  return xirr(transactions);
+  const ror = xirr(transactions);
+  if (verbose) console.log(transactions, '# shares', sharesOwned, 'ror', ror);
+  return ror;
 }
 
 export function analyze(aoa: MonthlyData[]) {
@@ -222,8 +223,8 @@ export function horizonReturns(aoa: MonthlyData[], nyears = 10, f: any = undefin
   let lastStart = aoa.length - months;
   let ret: Horizon[] = [];
   for (let start = 0; start < lastStart; ++start) {
-    let xirr = f(aoa, start, start + months);
-    ret.push({starting: mdToDate(aoa[start]), ending: mdToDate(aoa[start + months]), xirr});
+    let ror = f(aoa, start, start + months);
+    ret.push({starting: mdToDate(aoa[start]), ending: mdToDate(aoa[start + months]), xirr: ror});
   }
   return ret;
 }

@@ -241,9 +241,10 @@ function dollarCostAverageCPIBetween(aoa, buyIdx, sellIdx, verbose) {
     transactions.push({ amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28) });
     // Sell at the beginning of the final month
     transactions.push({ amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx]) });
+    var ror = xirr(transactions);
     if (verbose)
-        console.log(transactions, '# shares', sharesOwned);
-    return xirr(transactions);
+        console.log(transactions, '# shares', sharesOwned, 'ror', ror);
+    return ror;
 }
 exports.dollarCostAverageCPIBetween = dollarCostAverageCPIBetween;
 function analyze(aoa) {
@@ -289,8 +290,8 @@ function horizonReturns(aoa, nyears, f) {
     var lastStart = aoa.length - months;
     var ret = [];
     for (var start = 0; start < lastStart; ++start) {
-        var xirr_1 = f(aoa, start, start + months);
-        ret.push({ starting: mdToDate(aoa[start]), ending: mdToDate(aoa[start + months]), xirr: xirr_1 });
+        var ror = f(aoa, start, start + months);
+        ret.push({ starting: mdToDate(aoa[start]), ending: mdToDate(aoa[start + months]), xirr: ror });
     }
     return ret;
 }

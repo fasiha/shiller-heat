@@ -35,7 +35,7 @@ export async function generateAllData() {
     }
   }
 
-  return [10, 25, 50].map(years => ({years, returns: horizonReturns(aoa, years, dollarCostAverageCPIBetween)}));
+  return [15, 30, 45].map(years => ({years, returns: horizonReturns(aoa, years, dollarCostAverageCPIBetween)}));
 }
 
 export async function render() {
@@ -44,15 +44,15 @@ export async function render() {
     let ret = horizon.returns;
     let x = ret.map(h => h.ending);
     let y = ret.map(h => h.xirr * 100);
-    let medianReturn: number = median(y);
+    let medianReturn: number = median(y.slice());
     return {
       x,
       y,
       name: `${horizon.years}y; median=${medianReturn.toFixed(1)}%`,
-      line: {width: (1 + hidx + (hidx > 2 ? 2 : 0))}
+      line: {width: horizon.years < 10 ? 0.5 : (1 + hidx)}
     };
   });
-  let title = {text: 'S&P500: monthly dollar-cost-averaging $CPI, reinvesting dividends, before selling everything'};
+  let title = {text: 'S&P500: monthly dollar-cost-averaging $CPI (reinvesting dividends), before selling everything'};
   let xaxis = {title: {text: 'Sell date'}};
   let yaxis = {title: {text: 'Annualized rate of return (%)'}};
   let domNode = document.getElementById('tester');

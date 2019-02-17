@@ -1,5 +1,15 @@
 import XLSX from 'xlsx';
-import {analyze, getRawData, MonthlyData, parse, SHILLER_IE_XLS_URL} from './index';
+
+import {
+  analyze,
+  dollarCostAverageCPIBetween,
+  getRawData,
+  horizonReturns,
+  horizonToTSV,
+  MonthlyData,
+  parse,
+  SHILLER_IE_XLS_URL
+} from './index';
 
 if (module === require.main) {
   var {existsSync, readFileSync, writeFileSync} = require('fs');
@@ -19,6 +29,7 @@ if (module === require.main) {
       aoa = parse(workbook);
       writeFileSync(jsonfile, JSON.stringify(aoa));
     }
-    analyze(aoa);
+    let y1 = horizonReturns(aoa, 1, dollarCostAverageCPIBetween);
+    y1.forEach(h => console.log(horizonToTSV(h)));
   })();
 }
