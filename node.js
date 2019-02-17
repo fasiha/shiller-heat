@@ -51,6 +51,7 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var xlsx_1 = __importDefault(require("xlsx"));
 var shiller_1 = require("./shiller");
+var yahoo_finance_1 = require("./yahoo-finance");
 function horizonToTSV(y) {
     var d = y.starting.toISOString().split('T')[0];
     var x = y.xirr;
@@ -107,10 +108,11 @@ function analyze(aoa) {
 }
 if (module === require.main) {
     var _a = require('fs'), existsSync = _a.existsSync, readFileSync = _a.readFileSync, writeFileSync = _a.writeFileSync;
-    var xlsfile_1 = shiller_1.SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
+    var datapath_1 = 'data/';
+    var xlsfile_1 = datapath_1 + shiller_1.SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
     var jsonfile_1 = xlsfile_1 + '.json';
     (function () { return __awaiter(_this, void 0, void 0, function () {
-        var aoa, workbook;
+        var aoa, workbook, naoa;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -133,6 +135,8 @@ if (module === require.main) {
                     _a.label = 5;
                 case 5:
                     analyze(aoa);
+                    naoa = yahoo_finance_1.parseRawCSV(readFileSync(datapath_1 + '^N225.csv', 'utf8'));
+                    console.log(shiller_1.horizonReturns(naoa, 10, shiller_1.dollarCostAverageBetween));
                     return [2 /*return*/];
             }
         });

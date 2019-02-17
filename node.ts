@@ -12,6 +12,7 @@ import {
   reinvestBetween,
   SHILLER_IE_XLS_URL
 } from './shiller';
+import {parseRawCSV} from './yahoo-finance';
 
 function horizonToTSV(y: Horizon) {
   let d = y.starting.toISOString().split('T')[0];
@@ -61,7 +62,8 @@ function analyze(aoa: MonthlyData[]) {
 
 if (module === require.main) {
   var {existsSync, readFileSync, writeFileSync} = require('fs');
-  const xlsfile = SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
+  const datapath = 'data/';
+  const xlsfile = datapath + SHILLER_IE_XLS_URL.split('/').slice(-1)[0];
   const jsonfile = xlsfile + '.json';
   (async () => {
     let aoa: MonthlyData[] = [];
@@ -78,5 +80,8 @@ if (module === require.main) {
       writeFileSync(jsonfile, JSON.stringify(aoa));
     }
     analyze(aoa);
+
+    let naoa = parseRawCSV(readFileSync(datapath + '^N225.csv', 'utf8'));
+    console.log(horizonReturns(naoa, 10, dollarCostAverageBetween));
   })();
 }
