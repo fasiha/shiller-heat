@@ -4,12 +4,12 @@ import {
   arrayBufferToWorkbook,
   // dollarCostAverageBetween,
   dollarCostAverageCPIBetween,
-  getRawData,
+  getWorkbook,
   horizonReturns,
   MonthlyData,
-  parse,
+  parseWorkbook,
   SHILLER_IE_XLS_URL
-} from './index';
+} from './shiller';
 
 var Plotly = require('plotly.js-basic-dist');
 var median = require('median-quickselect');
@@ -29,9 +29,9 @@ export async function generateAllData() {
   } else {
     let xlsFetched = await fetch(xlsfile);
     if (xlsFetched.ok) {
-      aoa = parse(arrayBufferToWorkbook(await xlsFetched.arrayBuffer()));
+      aoa = parseWorkbook(arrayBufferToWorkbook(await xlsFetched.arrayBuffer()));
     } else {
-      aoa = parse(await getRawData());
+      aoa = parseWorkbook(await getWorkbook());
     }
   }
 

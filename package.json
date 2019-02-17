@@ -14,14 +14,14 @@
   "author": "Ahmed Fasih",
   "license": "Unlicense",
   "dependencies": {
-    "browserify": "^16.2.3",
     "fetch-ponyfill": "^6.0.2",
     "median-quickselect": "^1.0.1",
-    "plotly.js-basic-dist": "^1.44.4",
     "xirr": "^1.0.3",
     "xlsx": "^0.14.1"
   },
   "devDependencies": {
+    "plotly.js-basic-dist": "^1.44.4",
+    "browserify": "^16.2.3",
     "@types/node": "^11.9.4",
     "google-closure-compiler": "^20190121.0.0",
     "typescript": "^3.3.3"

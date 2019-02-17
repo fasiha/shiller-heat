@@ -50,16 +50,6 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
-var __values = (this && this.__values) || function (o) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
-    if (m) return m.call(o);
-    return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -82,7 +72,7 @@ function decimalDateToYearMonth(dec) {
     }
     return [parseInt(y), m === '1' ? 10 : parseInt(m)];
 }
-function parse(workbook) {
+function parseWorkbook(workbook) {
     if (workbook.SheetNames[2] !== DATA_SHEETNAME) {
         throw new Error('unexpected name of third sheet');
     }
@@ -103,30 +93,7 @@ function parse(workbook) {
     }
     return arr;
 }
-exports.parse = parse;
-function minmax(arr) {
-    var e_1, _a;
-    if (arr.length === 0) {
-        throw new Error('minmax does not work on empty arrays');
-    }
-    var min = arr[0];
-    var max = arr[0];
-    try {
-        for (var arr_1 = __values(arr), arr_1_1 = arr_1.next(); !arr_1_1.done; arr_1_1 = arr_1.next()) {
-            var x = arr_1_1.value;
-            min = Math.min(x, min);
-            max = Math.max(x, max);
-        }
-    }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
-    finally {
-        try {
-            if (arr_1_1 && !arr_1_1.done && (_a = arr_1.return)) _a.call(arr_1);
-        }
-        finally { if (e_1) throw e_1.error; }
-    }
-    return { min: min, max: max };
-}
+exports.parseWorkbook = parseWorkbook;
 function mdToDate(row, day) {
     if (day === void 0) { day = 1; }
     return new Date(Date.UTC(row.year, row.month - 1, day));
@@ -247,39 +214,6 @@ function dollarCostAverageCPIBetween(aoa, buyIdx, sellIdx, verbose) {
     return ror;
 }
 exports.dollarCostAverageCPIBetween = dollarCostAverageCPIBetween;
-function analyze(aoa) {
-    var _a = minmax(aoa.map(function (_a) {
-        var price = _a.price, div = _a.div;
-        return div / price;
-    })), worstDivRate = _a.min, bestDivRate = _a.max;
-    var f = function (n) { return (n * 100).toFixed(3); };
-    console.log('# Dividends');
-    console.log("Worst and best dividend rates: " + f(worstDivRate) + "% and " + f(bestDivRate) + "%");
-    var start = 0;
-    var end = 12;
-    console.log('## Buy once, sell later, keep dividends as cash');
-    console.log("XIRR = " + f(lumpBetween(aoa, start, end)) + "%");
-    console.log('## Buy once, reinvest dividends, sell later');
-    console.log("XIRR = " + f(reinvestBetween(aoa, start, end)) + "%");
-    console.log('## Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
-    console.log("XIRR = " + f(dollarCostAverageBetween(aoa, start, end)) + "%");
-    console.log('## Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
-    console.log("XIRR = " + f(dollarCostAverageCPIBetween(aoa, start, end)) + "%");
-    // console.log(aoa[start], aoa[end])
-    console.log('## Ten year horizons');
-    horizonReturns(aoa, 10).forEach(function (y) { return console.log(horizonToTSV(y)); });
-    console.log('## 30 year horizons');
-    horizonReturns(aoa, 30).forEach(function (y) { return console.log(horizonToTSV(y)); });
-    console.log('## 50 year horizons');
-    horizonReturns(aoa, 50).forEach(function (y) { return console.log(horizonToTSV(y)); });
-}
-exports.analyze = analyze;
-function horizonToTSV(y) {
-    var d = y.starting.toISOString().split('T')[0];
-    var x = y.xirr;
-    return d + "\t" + x;
-}
-exports.horizonToTSV = horizonToTSV;
 function horizonReturns(aoa, nyears, f) {
     if (nyears === void 0) { nyears = 10; }
     if (f === void 0) { f = undefined; }
@@ -302,9 +236,10 @@ function getArrayBuffer(url) {
         return [2 /*return*/, fetch(url).then(function (x) { return x.arrayBuffer(); })];
     }); });
 }
+exports.getArrayBuffer = getArrayBuffer;
 function arrayBufferToWorkbook(buf) { return xlsx_1.default.read(new Uint8Array(buf), { type: "array" }); }
 exports.arrayBufferToWorkbook = arrayBufferToWorkbook;
-function getRawData(url) {
+function getWorkbook(url) {
     if (url === void 0) { url = exports.SHILLER_IE_XLS_URL; }
     return __awaiter(this, void 0, void 0, function () { var _a; return __generator(this, function (_b) {
         switch (_b.label) {
@@ -315,4 +250,4 @@ function getRawData(url) {
         }
     }); });
 }
-exports.getRawData = getRawData;
+exports.getWorkbook = getWorkbook;

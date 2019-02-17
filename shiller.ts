@@ -21,13 +21,24 @@ export type MonthlyData = {
   cpi: number
 };
 
+export type Horizon = {
+  starting: Date,
+  ending: Date,
+  xirr: number,
+};
+
+type Transaction = {
+  amount: number,
+  when: Date
+};
+
 function decimalDateToYearMonth(dec: string): [number, number] {
   let [y, m] = dec.split('.');
   if (!m || !y || y.length === 0 || m.length === 0) { throw new Error('bad date'); }
   return [parseInt(y), m === '1' ? 10 : parseInt(m)];
 }
 
-export function parse(workbook: XLSX.WorkBook) {
+export function parseWorkbook(workbook: XLSX.WorkBook) {
   if (workbook.SheetNames[2] !== DATA_SHEETNAME) { throw new Error('unexpected name of third sheet'); }
 
   let data = workbook.Sheets[DATA_SHEETNAME];
@@ -50,23 +61,7 @@ export function parse(workbook: XLSX.WorkBook) {
   return arr;
 }
 
-function minmax(arr: number[]) {
-  if (arr.length === 0) { throw new Error('minmax does not work on empty arrays'); }
-  let min = arr[0];
-  let max = arr[0];
-  for (let x of arr) {
-    min = Math.min(x, min);
-    max = Math.max(x, max);
-  }
-  return {min, max};
-}
-
 function mdToDate(row: MonthlyData, day = 1) { return new Date(Date.UTC(row.year, row.month - 1, day)); }
-
-type Transaction = {
-  amount: number,
-  when: Date
-};
 
 /**
  * The convention here is that: you buy at the beginning of the month indicated by `aoa[buyIdx]`. You collect
@@ -178,45 +173,6 @@ export function dollarCostAverageCPIBetween(aoa: MonthlyData[], buyIdx: number, 
   return ror;
 }
 
-export function analyze(aoa: MonthlyData[]) {
-  let {min: worstDivRate, max: bestDivRate} = minmax(aoa.map(({price, div}) => div / price));
-  let f = (n: number) => (n * 100).toFixed(3);
-  console.log('# Dividends')
-  console.log(`Worst and best dividend rates: ${f(worstDivRate)}% and ${f(bestDivRate)}%`);
-
-  let start = 0;
-  let end = 12;
-  console.log('## Buy once, sell later, keep dividends as cash');
-  console.log(`XIRR = ${f(lumpBetween(aoa, start, end))}%`);
-
-  console.log('## Buy once, reinvest dividends, sell later');
-  console.log(`XIRR = ${f(reinvestBetween(aoa, start, end))}%`);
-
-  console.log('## Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
-  console.log(`XIRR = ${f(dollarCostAverageBetween(aoa, start, end))}%`);
-
-  console.log('## Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
-  console.log(`XIRR = ${f(dollarCostAverageCPIBetween(aoa, start, end))}%`);
-  // console.log(aoa[start], aoa[end])
-
-  console.log('## Ten year horizons');
-  horizonReturns(aoa, 10).forEach(y => console.log(horizonToTSV(y)));
-  console.log('## 30 year horizons');
-  horizonReturns(aoa, 30).forEach(y => console.log(horizonToTSV(y)));
-  console.log('## 50 year horizons');
-  horizonReturns(aoa, 50).forEach(y => console.log(horizonToTSV(y)));
-}
-export type Horizon = {
-  starting: Date,
-  ending: Date,
-  xirr: number,
-};
-export function horizonToTSV(y: Horizon) {
-  let d = y.starting.toISOString().split('T')[0];
-  let x = y.xirr;
-  return `${d}\t${x}`;
-}
-
 export function horizonReturns(aoa: MonthlyData[], nyears = 10, f: any = undefined) {
   if (typeof f === 'undefined') { f = dollarCostAverageCPIBetween; }
   let months = nyears * 12;
@@ -229,6 +185,6 @@ export function horizonReturns(aoa: MonthlyData[], nyears = 10, f: any = undefin
   return ret;
 }
 
-async function getArrayBuffer(url = SHILLER_IE_XLS_URL) { return fetch(url).then(x => x.arrayBuffer()); }
+export async function getArrayBuffer(url = SHILLER_IE_XLS_URL) { return fetch(url).then(x => x.arrayBuffer()); }
 export function arrayBufferToWorkbook(buf: ArrayBuffer) { return XLSX.read(new Uint8Array(buf), {type: "array"}); }
-export async function getRawData(url = SHILLER_IE_XLS_URL) { return arrayBufferToWorkbook(await getArrayBuffer(url)); }
+export async function getWorkbook(url = SHILLER_IE_XLS_URL) { return arrayBufferToWorkbook(await getArrayBuffer(url)); }
