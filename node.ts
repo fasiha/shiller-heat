@@ -52,12 +52,14 @@ function analyze(aoa: MonthlyData[]) {
   console.log(`XIRR = ${f(dollarCostAverageCPIBetween(aoa, start, end))}%`);
   // console.log(aoa[start], aoa[end])
 
-  console.log('## Ten year horizons');
-  horizonReturns(aoa, 10).forEach(y => console.log(horizonToTSV(y)));
-  console.log('## 30 year horizons');
-  horizonReturns(aoa, 30).forEach(y => console.log(horizonToTSV(y)));
-  console.log('## 50 year horizons');
-  horizonReturns(aoa, 50).forEach(y => console.log(horizonToTSV(y)));
+  let y = horizonReturns(aoa, 45);
+  let sorted = y.map(o => o.xirr).sort((a, b) => a - b);
+  let quantilesWanted = [0, .1, .25, .33, .5, .67, .75, .9, 1];
+  const getQuantile = (sorted: number[], q: number) => sorted[Math.round(q * sorted.length)];
+  let quantiles = quantilesWanted.map(q => getQuantile(sorted, q));
+  let table = quantilesWanted.map((q, i) => [q, 100 * quantiles[i]]);
+  console.log('# Quantiles');
+  console.log(table.map(v => v.join(', ')).join('\n'));
 }
 
 if (module === require.main) {

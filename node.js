@@ -99,12 +99,14 @@ function analyze(aoa) {
     console.log('## Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
     console.log("XIRR = " + f(shiller_1.dollarCostAverageCPIBetween(aoa, start, end)) + "%");
     // console.log(aoa[start], aoa[end])
-    console.log('## Ten year horizons');
-    shiller_1.horizonReturns(aoa, 10).forEach(function (y) { return console.log(horizonToTSV(y)); });
-    console.log('## 30 year horizons');
-    shiller_1.horizonReturns(aoa, 30).forEach(function (y) { return console.log(horizonToTSV(y)); });
-    console.log('## 50 year horizons');
-    shiller_1.horizonReturns(aoa, 50).forEach(function (y) { return console.log(horizonToTSV(y)); });
+    var y = shiller_1.horizonReturns(aoa, 45);
+    var sorted = y.map(function (o) { return o.xirr; }).sort(function (a, b) { return a - b; });
+    var quantilesWanted = [0, .1, .25, .33, .5, .67, .75, .9, 1];
+    var getQuantile = function (sorted, q) { return sorted[Math.round(q * sorted.length)]; };
+    var quantiles = quantilesWanted.map(function (q) { return getQuantile(sorted, q); });
+    var table = quantilesWanted.map(function (q, i) { return [q, 100 * quantiles[i]]; });
+    console.log('# Quantiles');
+    console.log(table.map(function (v) { return v.join(', '); }).join('\n'));
 }
 if (module === require.main) {
     var _a = require('fs'), existsSync = _a.existsSync, readFileSync = _a.readFileSync, writeFileSync = _a.writeFileSync;
