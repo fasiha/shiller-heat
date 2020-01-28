@@ -17,7 +17,7 @@ var median = require('median-quickselect');
 
 const {fetch} = fetchPonyfill();
 
-const horizons = [15, 30, 45];
+const horizons = [15, 30, 45, 60];
 const NIKKEI_FILE = '^N225.csv';
 const datapath = 'data/';
 
@@ -57,7 +57,7 @@ export async function render() {
     let ret = horizon.returns;
     let x = ret.map(h => h.ending);
     let y = ret.map(h => h.xirr * 100);
-    let medianReturn: number = median(y.slice());
+    let medianReturn: number = median(y.slice()) || 0;
     return {
       x,
       y,
@@ -77,7 +77,7 @@ export async function render() {
       let ret = horizon.returns;
       let x = ret.map(h => h.ending);
       let y = ret.map(h => h.xirr * 100);
-      let medianReturn: number = median(y.slice());
+      let medianReturn: number = median(y.slice()) || 0;
       return {
         x,
         y,
