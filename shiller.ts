@@ -12,13 +12,15 @@ const HEADER_DATE = 'Date';
 const HEADER_P = 'P';
 const HEADER_D = 'D';
 const HEADER_CPI = 'CPI';
+const HEADER_10YR_RATE = 'Rate GS10';
 
 export type MonthlyData = {
   year: number,
   month: number,
   price: number,
   div: number,
-  cpi: number
+  cpi: number,
+  interest10y: number,
 };
 
 export type Horizon = {
@@ -42,9 +44,9 @@ export function parseWorkbook(workbook: XLSX.WorkBook) {
   if (workbook.SheetNames[2] !== DATA_SHEETNAME) { throw new Error('unexpected name of third sheet'); }
 
   let data = workbook.Sheets[DATA_SHEETNAME];
-  let headerRow = 'ABCE'.split('').map(col => col + HEADER_ROW_A1).map(a1 => data[a1].v);
+  let headerRow = 'ABCEG'.split('').map(col => col + HEADER_ROW_A1).map(a1 => data[a1].v);
 
-  if (headerRow.join(',') !== [HEADER_DATE, HEADER_P, HEADER_D, HEADER_CPI].join(',')) {
+  if (headerRow.join(',') !== [HEADER_DATE, HEADER_P, HEADER_D, HEADER_CPI, HEADER_10YR_RATE].join(',')) {
     throw new Error('unexpected header on row ' + HEADER_ROW_A1);
   }
 
@@ -55,7 +57,8 @@ export function parseWorkbook(workbook: XLSX.WorkBook) {
     let price: number = data['B' + rownum].v;
     let div: number = data['C' + rownum].v;
     let cpi: number = data['E' + rownum].v;
-    arr.push({year, month, price, div, cpi});
+    let interest10y: number = data['G' + rownum].v;
+    arr.push({year, month, price, div, cpi, interest10y});
     rownum++;
   }
   return arr;
@@ -194,6 +197,8 @@ export function dcaCPISkip(aoa: MonthlyData[], buyIdx: number, sellIdx: number, 
   if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
   const skips: Set<number> = skipIdxs || new Set();
 
+  let cash = 0;
+
   // Invest $CPI at the beginning of the month
   let transactions: Transaction[] = [{amount: -aoa[buyIdx].cpi, when: mdToDate(aoa[buyIdx])}];
   let sharesOwned = aoa[buyIdx].cpi / aoa[buyIdx].price;
@@ -204,15 +209,20 @@ export function dcaCPISkip(aoa: MonthlyData[], buyIdx: number, sellIdx: number, 
     const priceTomorrow = aoa[n + 1].price;  // dollars per share
     sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
 
-    if (skips.has(n + 1)) { continue; }
-    // invest $CPI (of the next month) at the start of the next month
+    // invest $CPI (of the next month) at the start of the next month, either in stock or cash
+    // interest payment on existing cash
+    cash += cash * (aoa[n].interest10y / 100 / 12 * 0.8); // discount the 10year rate to get ~monthly FORGIVEME
     const cpiTomorrow = aoa[n + 1].cpi;
+    if (skips.has(n + 1)) {
+      cash += cpiTomorrow;
+    } else {
+      sharesOwned += cpiTomorrow / priceTomorrow;
+    }
     transactions.push({amount: -cpiTomorrow, when: mdToDate(aoa[n + 1])});
-    sharesOwned += cpiTomorrow / priceTomorrow;
   }
 
-  // Keep final dividend payment at the end of the month as cash
-  transactions.push({amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28)});
+  // Keep final dividend payment at the end of the month as cash, along with actual cash
+  transactions.push({amount: aoa[sellIdx - 1].div + cash, when: mdToDate(aoa[sellIdx - 1], 28)});
 
   // Sell at the beginning of the final month
   transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
