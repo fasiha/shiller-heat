@@ -2,10 +2,12 @@ import fetchPonyfill from 'fetch-ponyfill';
 
 import {
   arrayBufferToWorkbook,
+  dcaCPISkip,
   dollarCostAverageBetween,
   dollarCostAverageCPIBetween,
   getWorkbook,
   horizonReturns,
+  mdToDate,
   MonthlyData,
   parseWorkbook,
   SHILLER_IE_XLS_URL
@@ -20,6 +22,15 @@ const {fetch} = fetchPonyfill();
 const horizons = [15, 30, 45, 60];
 const NIKKEI_FILE = '^N225.csv';
 const datapath = 'data/';
+
+function missingMonthsMaker(slice: MonthlyData[], nmonths: number) {
+  var miss = [];
+  var v = Array.from(Array(nmonths), (_, i) => i + 1);
+  for (let n = 0; n < slice.length - 2; n++) {
+    miss.push(100 * dcaCPISkip(slice, 0, slice.length - 1, new Set(v.map(x => x + n))))
+  }
+  return miss;
+}
 
 export async function shiller() {
   let aoa: MonthlyData[];
@@ -39,6 +50,33 @@ export async function shiller() {
     }
   }
 
+  {
+    var df = aoa;
+    var slice = df.slice(df.length - 12 * 40);
+    var totalXirr = dcaCPISkip(slice, 0, slice.length - 1, new Set());
+
+    var missedOneXirrs = missingMonthsMaker(slice, 1);
+
+    var dates = missedOneXirrs.map((_, i) => mdToDate(slice[i]));
+    var sameparams = {x: dates, line: {width: 2}, opacity: .5};
+    var traces = [
+      {x: dates, y: slice.map(o => o.price), name: 'S&P500 price', yaxis: 'y2', line: {width: 2}},
+      {...sameparams, y: missedOneXirrs, name: 'missing 1 mo.'},
+      {...sameparams, y: missingMonthsMaker(slice, 3), name: 'missing 3 mo.'},
+      {...sameparams, y: missingMonthsMaker(slice, 6), name: 'missing 6 mo.'},
+      {...sameparams, y: missingMonthsMaker(slice, 9), name: 'missing 9 mo.'},
+      {...sameparams, y: missingMonthsMaker(slice, 12), name: 'missing 12 mo.'},
+    ];
+    let xaxis = {title: {text: 'Date'}};
+    let yaxis = {title: {text: 'Annualized rate of return (%)'}};
+
+    Plotly.plot(document.getElementById('parp'), traces, {
+      xaxis,
+      yaxis,
+      title: {text: `Annualized returns with NO missed months: ${(totalXirr * 100).toPrecision(3)}%`},
+      yaxis2: {title: 'S&P500 price', overlaying: 'y', side: 'right', type: 'log', autorange: true}
+    });
+  }
   return horizons.map(years => ({years, returns: horizonReturns(aoa, years, dollarCostAverageCPIBetween)}));
 }
 
@@ -61,7 +99,7 @@ export async function render() {
     return {
       x,
       y,
-      name: `${horizon.years}y; median=${medianReturn.toFixed(1)}%`,
+      name: `${horizon.years}y; median=${Math.round(medianReturn * 100) / 100}%`,
       line: {width: horizon.years < 10 ? 0.5 : (1 + hidx)}
     };
   });

@@ -2,7 +2,7 @@ import fetchPonyfill from 'fetch-ponyfill';
 import XLSX from 'xlsx';
 
 const {fetch} = fetchPonyfill();
-const xirr = require('xirr');
+const xirr: (x: any) => number = require('xirr');
 
 export const SHILLER_IE_XLS_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
 const DATA_SHEETNAME = 'Data';
@@ -61,7 +61,7 @@ export function parseWorkbook(workbook: XLSX.WorkBook) {
   return arr;
 }
 
-function mdToDate(row: MonthlyData, day = 1) { return new Date(Date.UTC(row.year, row.month - 1, day)); }
+export function mdToDate(row: MonthlyData, day = 1) { return new Date(Date.UTC(row.year, row.month - 1, day)); }
 
 /**
  * The convention here is that: you buy at the beginning of the month indicated by `aoa[buyIdx]`. You collect
@@ -188,3 +188,46 @@ export function horizonReturns(aoa: MonthlyData[], nyears = 10, f: any = undefin
 export async function getArrayBuffer(url = SHILLER_IE_XLS_URL) { return fetch(url).then(x => x.arrayBuffer()); }
 export function arrayBufferToWorkbook(buf: ArrayBuffer) { return XLSX.read(new Uint8Array(buf), {type: "array"}); }
 export async function getWorkbook(url = SHILLER_IE_XLS_URL) { return arrayBufferToWorkbook(await getArrayBuffer(url)); }
+
+export function dcaCPISkip(aoa: MonthlyData[], buyIdx: number, sellIdx: number, skipIdxs?: Set<number>) {
+  if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
+  if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
+  const skips: Set<number> = skipIdxs || new Set();
+
+  // Invest $CPI at the beginning of the month
+  let transactions: Transaction[] = [{amount: -aoa[buyIdx].cpi, when: mdToDate(aoa[buyIdx])}];
+  let sharesOwned = aoa[buyIdx].cpi / aoa[buyIdx].price;
+
+  for (let n = buyIdx; n < sellIdx - 1; ++n) {
+    // reinvest dividends at the end of each month
+    const divToday = aoa[n].div;             // dollars
+    const priceTomorrow = aoa[n + 1].price;  // dollars per share
+    sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
+
+    if (skips.has(n + 1)) { continue; }
+    // invest $CPI (of the next month) at the start of the next month
+    const cpiTomorrow = aoa[n + 1].cpi;
+    transactions.push({amount: -cpiTomorrow, when: mdToDate(aoa[n + 1])});
+    sharesOwned += cpiTomorrow / priceTomorrow;
+  }
+
+  // Keep final dividend payment at the end of the month as cash
+  transactions.push({amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28)});
+
+  // Sell at the beginning of the final month
+  transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
+  return xirr(transactions);
+}
+
+if (require.main === module) {
+  var {readFileSync} = require('fs');
+  var df: MonthlyData[] = JSON.parse(readFileSync('data/ie_data.xls.json', 'utf8'));
+  var slice = df.slice(df.length - 12 * 40);
+  var totalXirr = dcaCPISkip(slice, 0, slice.length - 1, new Set());
+  var missedOneXirrs = [];
+  for (let n = 0; n < slice.length - 2; n++) {
+    missedOneXirrs.push(dcaCPISkip(slice, 0, slice.length - 1, new Set([n + 1])))
+  }
+  console.log({totalXirr});
+  console.log(missedOneXirrs);
+}

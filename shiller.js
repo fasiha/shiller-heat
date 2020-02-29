@@ -98,6 +98,7 @@ function mdToDate(row, day) {
     if (day === void 0) { day = 1; }
     return new Date(Date.UTC(row.year, row.month - 1, day));
 }
+exports.mdToDate = mdToDate;
 /**
  * The convention here is that: you buy at the beginning of the month indicated by `aoa[buyIdx]`. You collect
  * dividends at the end of the month. Then eventually you sell at the first of the month of `aoa[sellIdx]`.
@@ -251,3 +252,46 @@ function getWorkbook(url) {
     }); });
 }
 exports.getWorkbook = getWorkbook;
+function dcaCPISkip(aoa, buyIdx, sellIdx, skipIdxs) {
+    if (buyIdx >= sellIdx) {
+        throw new Error('must sell strictly after buying');
+    }
+    if (buyIdx < 0 || sellIdx >= aoa.length) {
+        throw new Error('buy and sell indexes out of bounds');
+    }
+    var skips = skipIdxs || new Set();
+    // Invest $CPI at the beginning of the month
+    var transactions = [{ amount: -aoa[buyIdx].cpi, when: mdToDate(aoa[buyIdx]) }];
+    var sharesOwned = aoa[buyIdx].cpi / aoa[buyIdx].price;
+    for (var n = buyIdx; n < sellIdx - 1; ++n) {
+        // reinvest dividends at the end of each month
+        var divToday = aoa[n].div; // dollars
+        var priceTomorrow = aoa[n + 1].price; // dollars per share
+        sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
+        if (skips.has(n + 1)) {
+            continue;
+        }
+        // invest $CPI (of the next month) at the start of the next month
+        var cpiTomorrow = aoa[n + 1].cpi;
+        transactions.push({ amount: -cpiTomorrow, when: mdToDate(aoa[n + 1]) });
+        sharesOwned += cpiTomorrow / priceTomorrow;
+    }
+    // Keep final dividend payment at the end of the month as cash
+    transactions.push({ amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28) });
+    // Sell at the beginning of the final month
+    transactions.push({ amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx]) });
+    return xirr(transactions);
+}
+exports.dcaCPISkip = dcaCPISkip;
+if (require.main === module) {
+    var readFileSync = require('fs').readFileSync;
+    var df = JSON.parse(readFileSync('data/ie_data.xls.json', 'utf8'));
+    var slice = df.slice(df.length - 12 * 40);
+    var totalXirr = dcaCPISkip(slice, 0, slice.length - 1, new Set());
+    var missedOneXirrs = [];
+    for (var n = 0; n < slice.length - 2; n++) {
+        missedOneXirrs.push(dcaCPISkip(slice, 0, slice.length - 1, new Set([n + 1])));
+    }
+    console.log({ totalXirr: totalXirr });
+    console.log(missedOneXirrs);
+}
