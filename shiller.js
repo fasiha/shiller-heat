@@ -66,6 +66,8 @@ var HEADER_P = 'P';
 var HEADER_D = 'D';
 var HEADER_CPI = 'CPI';
 var HEADER_10YR_RATE = 'Rate GS10';
+var HEADER_REAL_PRICE = 'Price';
+var HEADER_REAL_DIVIDEND = 'Dividend';
 function decimalDateToYearMonth(dec) {
     var _a = __read(dec.split('.'), 2), y = _a[0], m = _a[1];
     if (!m || !y || y.length === 0 || m.length === 0) {
@@ -78,8 +80,10 @@ function parseWorkbook(workbook) {
         throw new Error('unexpected name of third sheet');
     }
     var data = workbook.Sheets[DATA_SHEETNAME];
-    var headerRow = 'ABCEG'.split('').map(function (col) { return col + HEADER_ROW_A1; }).map(function (a1) { return data[a1].v; });
-    if (headerRow.join(',') !== [HEADER_DATE, HEADER_P, HEADER_D, HEADER_CPI, HEADER_10YR_RATE].join(',')) {
+    var headerRow = 'ABCEGHI'.split('').map(function (col) { return col + HEADER_ROW_A1; }).map(function (a1) { return data[a1].v; });
+    if (headerRow.join(',') !== [
+        HEADER_DATE, HEADER_P, HEADER_D, HEADER_CPI, HEADER_10YR_RATE, HEADER_REAL_PRICE, HEADER_REAL_DIVIDEND
+    ].join(',')) {
         throw new Error('unexpected header on row ' + HEADER_ROW_A1);
     }
     var arr = [];
@@ -90,7 +94,9 @@ function parseWorkbook(workbook) {
         var div = data['C' + rownum].v;
         var cpi = data['E' + rownum].v;
         var interest10y = data['G' + rownum].v;
-        arr.push({ year: year, month: month, price: price, div: div, cpi: cpi, interest10y: interest10y });
+        var realPrice = data['H' + rownum].v;
+        var realDividend = data['I' + rownum].v;
+        arr.push({ year: year, month: month, price: price, div: div, cpi: cpi, interest10y: interest10y, realPrice: realPrice, realDividend: realDividend });
         rownum++;
     }
     return arr;

@@ -13,6 +13,8 @@ const HEADER_P = 'P';
 const HEADER_D = 'D';
 const HEADER_CPI = 'CPI';
 const HEADER_10YR_RATE = 'Rate GS10';
+const HEADER_REAL_PRICE = 'Price';
+const HEADER_REAL_DIVIDEND = 'Dividend';
 
 export type MonthlyData = {
   year: number,
@@ -21,6 +23,8 @@ export type MonthlyData = {
   div: number,
   cpi: number,
   interest10y: number,
+  realPrice: number,
+  realDividend: number,
 };
 
 export type Horizon = {
@@ -44,9 +48,11 @@ export function parseWorkbook(workbook: XLSX.WorkBook) {
   if (workbook.SheetNames[2] !== DATA_SHEETNAME) { throw new Error('unexpected name of third sheet'); }
 
   let data = workbook.Sheets[DATA_SHEETNAME];
-  let headerRow = 'ABCEG'.split('').map(col => col + HEADER_ROW_A1).map(a1 => data[a1].v);
+  let headerRow = 'ABCEGHI'.split('').map(col => col + HEADER_ROW_A1).map(a1 => data[a1].v);
 
-  if (headerRow.join(',') !== [HEADER_DATE, HEADER_P, HEADER_D, HEADER_CPI, HEADER_10YR_RATE].join(',')) {
+  if (headerRow.join(',') !== [
+        HEADER_DATE, HEADER_P, HEADER_D, HEADER_CPI, HEADER_10YR_RATE, HEADER_REAL_PRICE, HEADER_REAL_DIVIDEND
+      ].join(',')) {
     throw new Error('unexpected header on row ' + HEADER_ROW_A1);
   }
 
@@ -58,7 +64,9 @@ export function parseWorkbook(workbook: XLSX.WorkBook) {
     let div: number = data['C' + rownum].v;
     let cpi: number = data['E' + rownum].v;
     let interest10y: number = data['G' + rownum].v;
-    arr.push({year, month, price, div, cpi, interest10y});
+    let realPrice: number = data['H' + rownum].v;
+    let realDividend: number = data['I' + rownum].v;
+    arr.push({year, month, price, div, cpi, interest10y, realPrice, realDividend});
     rownum++;
   }
   return arr;
