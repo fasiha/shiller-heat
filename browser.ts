@@ -4,6 +4,7 @@ import {
   arrayBufferToWorkbook,
   dcaCPISkip,
   dollarCostAverageBetween,
+  dollarCostAverageBetweenExcess,
   dollarCostAverageCPIBetween,
   getWorkbook,
   horizonReturns,
@@ -57,6 +58,31 @@ export async function nikkeiHorizonsData() {
   }
 }
 
+export async function renderExcess() {
+  let monthlyData = await shillerDataP;
+  let data =
+      horizons.map(years => ({years, returns: horizonReturns(monthlyData, years, dollarCostAverageBetweenExcess)}));
+  let traces = data.map((horizon, hidx) => {
+    let ret = horizon.returns;
+    let x = ret.map(h => h.ending);
+    let y = ret.map(h => h.xirr * 100);
+    let medianReturn: number = median(y.slice()) || 0;
+    return {
+      x,
+      y,
+      name: `${horizon.years}y; median=${Math.round(medianReturn * 100) / 100}%`,
+      line: {width: horizon.years < 10 ? 0.5 : (1 + hidx)}
+    };
+  });
+  let title = {
+    text: 'Monthly dollar-cost-averaging $CPI S&P500, reinvesting dividends: returns in excess of Treasury yields'
+  };
+  let xaxis = {title: {text: 'Horizon end date'}};
+  let yaxis = {title: {text: 'Annualized rate of return (%)'}};
+
+  Plotly.plot(document.getElementById('excess'), traces, {title, xaxis, yaxis});
+}
+
 export async function renderSnp500Nikkei() {
   let data = shillerToHorizonsData(await shillerDataP);
   let traces = data.map((horizon, hidx) => {
@@ -100,7 +126,6 @@ export async function renderSnp500Nikkei() {
   }
 }
 
-export async function renderMissingMonths() {}
 function missingMonthsMaker(slice: MonthlyData[], nmonths: number) {
   var miss = [];
   var v = Array.from(Array(nmonths), (_, i) => i + 1);
