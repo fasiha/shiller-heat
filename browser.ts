@@ -60,8 +60,8 @@ export async function nikkeiHorizonsData() {
 
 export async function renderExcess() {
   let monthlyData = await shillerDataP;
-  let data =
-      horizons.map(years => ({years, returns: horizonReturns(monthlyData, years, dollarCostAverageBetweenExcess)}));
+  let data = [10, 20, 40,
+              60].map(years => ({years, returns: horizonReturns(monthlyData, years, dollarCostAverageBetweenExcess)}));
   let traces = data.map((horizon, hidx) => {
     let ret = horizon.returns;
     let x = ret.map(h => h.ending);

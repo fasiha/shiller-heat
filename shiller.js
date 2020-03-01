@@ -217,6 +217,42 @@ function dollarCostAverageCPIBetween(aoa, buyIdx, sellIdx, verbose) {
     return ror;
 }
 exports.dollarCostAverageCPIBetween = dollarCostAverageCPIBetween;
+function dollarCostAverageBetweenExcess(data, buyIdx, sellIdx, tenYearToMonthlyDiscount) {
+    if (tenYearToMonthlyDiscount === void 0) { tenYearToMonthlyDiscount = 1.0; }
+    return dollarCostAverageCPIBetween(data, buyIdx, sellIdx) -
+        riskfreeCPIBetween(data, buyIdx, sellIdx, tenYearToMonthlyDiscount);
+}
+exports.dollarCostAverageBetweenExcess = dollarCostAverageBetweenExcess;
+function riskfreeCPIBetween(data, buyIdx, sellIdx, tenYearToMonthlyDiscount) {
+    if (tenYearToMonthlyDiscount === void 0) { tenYearToMonthlyDiscount = 1.0; }
+    if (buyIdx >= sellIdx) {
+        throw new Error('must sell strictly after buying');
+    }
+    if (buyIdx < 0 || sellIdx >= data.length) {
+        throw new Error('buy and sell indexes out of bounds');
+    }
+    var cash = 0;
+    var transactions = [];
+    for (var n = buyIdx; n < sellIdx; ++n) {
+        var thisMonth = data[n];
+        // earn interest
+        cash += cash * thisMonth.interest10y / 100 / 12 * tenYearToMonthlyDiscount;
+        // put $CPI into savings account
+        cash += thisMonth.cpi;
+        transactions.push({ amount: -thisMonth.cpi, when: mdToDate(data[n]) });
+    }
+    transactions.push({ amount: cash, when: mdToDate(data[sellIdx]) });
+    try {
+        return xirr(transactions);
+    }
+    catch (e) {
+        console.error(e);
+        console.log(transactions.map(function (o) { return o.amount; }));
+        console.log(data.slice(buyIdx, sellIdx).map(function (o) { return o.interest10y; }));
+        throw e;
+    }
+}
+exports.riskfreeCPIBetween = riskfreeCPIBetween;
 function horizonReturns(aoa, nyears, f) {
     if (nyears === void 0) { nyears = 10; }
     if (f === void 0) { f = undefined; }
