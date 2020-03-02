@@ -168,35 +168,31 @@ export function dcaCPISkip(aoa: MonthlyData[], buyIdx: number, sellIdx: number, 
   const skips: Set<number> = skipIdxs || new Set();
 
   let cash = 0;
+  let transactions: Transaction[] = [];
+  let sharesOwned = 0;
 
-  // Invest $CPI at the beginning of the month
-  let transactions: Transaction[] = [{amount: -aoa[buyIdx].cpi, when: mdToDate(aoa[buyIdx])}];
-  let sharesOwned = aoa[buyIdx].cpi / aoa[buyIdx].realPrice;
-
-  for (let n = buyIdx; n < sellIdx - 1; ++n) {
-    // reinvest dividends at the end of each month
-    const divToday = aoa[n].realDiv;            // dollars
-    const priceTomorrow = aoa[n + 1].realPrice; // dollars per share
-    sharesOwned += divToday / priceTomorrow;    // dollars / (dollars per share) = shares
-
-    // invest $CPI (of the next month) at the start of the next month, either in stock or cash
-    // interest payment on existing cash
-    cash += cash * (aoa[n].interest10y / 100 / 12 * 0.8); // discount the 10year rate to get ~monthly FORGIVEME
-    const cpiTomorrow = aoa[n + 1].cpi;
-    if (skips.has(n + 1)) {
-      cash += cpiTomorrow;
-    } else {
-      sharesOwned += cpiTomorrow / priceTomorrow;
+  for (let n = buyIdx; n < sellIdx; ++n) {
+    // reinvest last month's dividend payout
+    if (n > buyIdx) {
+      const dividendPayout = aoa[n - 1].realDiv / 12 * sharesOwned;
+      sharesOwned += dividendPayout / aoa[n].realPrice;
     }
-    transactions.push({amount: -cpiTomorrow, when: mdToDate(aoa[n + 1])});
+    // cash earns interest
+    cash += cash * (aoa[n].interest10y / 100 / 12);
+
+    // how do I spend this month's $1?
+    transactions.push({amount: -1, when: mdToDate(aoa[n])});
+    if (skips.has(n)) {
+      cash += 1;
+    } else {
+      sharesOwned += 1 / aoa[n].realPrice;
+    }
   }
-
-  // Keep final dividend payment at the end of the month as cash, along with actual cash
-  transactions.push({amount: aoa[sellIdx - 1].realDiv + cash, when: mdToDate(aoa[sellIdx - 1], 28)});
-
   // Sell at the beginning of the final month
-  transactions.push({amount: aoa[sellIdx].realPrice * sharesOwned, when: mdToDate(aoa[sellIdx])});
-  return xirr(transactions);
+  const finalCashInterest = cash * aoa[sellIdx].interest10y / 100 / 12;
+  transactions.push(
+      {amount: aoa[sellIdx].realPrice * sharesOwned + cash + finalCashInterest, when: mdToDate(aoa[sellIdx])});
+  return xirr(transactions, {maxIterations: 2000}, .05);
 }
 
 if (require.main === module) {

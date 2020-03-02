@@ -168,4 +168,4 @@ function missingMonthsAnalysis(df: MonthlyData[], horizonYears = 40, skipLatestY
     yaxis2: {title: 'S&P500 price', overlaying: 'y', side: 'right', type: 'log', autorange: true}
   });
 }
-export async function missingMonthsRender() { missingMonthsAnalysis(await shillerDataP); }
+export async function missingMonthsRender() { missingMonthsAnalysis(await shillerDataP, 60); }
