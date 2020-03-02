@@ -129,8 +129,9 @@ export function riskfreeBetween(data: MonthlyData[], buyIdx: number, sellIdx: nu
   let transactions: Transaction[] = [];
   for (let n = buyIdx; n < sellIdx; ++n) {
     // put $1 into savings account
-    transactions.push({amount: -1, when: mdToDate(data[n])});
-    cash += 1;
+    const monthly = data[sellIdx].cpi / data[n].cpi;
+    transactions.push({amount: -monthly, when: mdToDate(data[n])});
+    cash += monthly;
     // earn interest at end of month
     cash += cash * data[n].interest10y / 100 / 12 * tenYearToMonthlyDiscount;
   }

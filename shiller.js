@@ -168,8 +168,9 @@ function riskfreeBetween(data, buyIdx, sellIdx, tenYearToMonthlyDiscount) {
     var transactions = [];
     for (var n = buyIdx; n < sellIdx; ++n) {
         // put $1 into savings account
-        transactions.push({ amount: -1, when: mdToDate(data[n]) });
-        cash += 1;
+        var monthly = data[sellIdx].cpi / data[n].cpi;
+        transactions.push({ amount: -monthly, when: mdToDate(data[n]) });
+        cash += monthly;
         // earn interest at end of month
         cash += cash * data[n].interest10y / 100 / 12 * tenYearToMonthlyDiscount;
     }
