@@ -86,19 +86,18 @@ function analyze(aoa) {
         return div / price;
     })), worstDivRate = _a.min, bestDivRate = _a.max;
     var f = function (n) { return (n * 100).toFixed(3); };
-    console.log('# Dividends');
-    console.log("Worst and best dividend rates: " + f(worstDivRate) + "% and " + f(bestDivRate) + "%");
-    var start = 0;
-    var end = 12;
-    console.log('## Buy once, sell later, keep dividends as cash');
-    console.log("XIRR = " + f(shiller_1.lumpBetween(aoa, start, end)) + "%");
-    console.log('## Buy once, reinvest dividends, sell later');
-    console.log("XIRR = " + f(shiller_1.reinvestBetween(aoa, start, end)) + "%");
-    console.log('## Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
+    // console.log('# Dividends')
+    // console.log(`Worst and best dividend rates: ${f(worstDivRate)}% and ${f(bestDivRate)}%`);
+    var start = aoa.findIndex(function (o) { return o.year >= 1950; });
+    var end = aoa.findIndex(function (o) { return o.year >= 2009; });
+    // start = 294;
+    // end = 1024;
+    console.log([aoa[start], aoa[end]]);
+    console.log('## Dollar-cost-average (invest $1 each month), reinvest dividends, sell later');
     console.log("XIRR = " + f(shiller_1.dollarCostAverageBetween(aoa, start, end)) + "%");
-    console.log('## Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
-    console.log("XIRR = " + f(shiller_1.dollarCostAverageCPIBetween(aoa, start, end)) + "%");
+    console.log("EXCESS XIRR = " + f(shiller_1.dollarCostAverageBetweenExcess(aoa, start, end)) + "%");
     // console.log(aoa[start], aoa[end])
+    return;
     var y = shiller_1.horizonReturns(aoa, 45);
     var sorted = y.map(function (o) { return o.xirr; }).sort(function (a, b) { return a - b; });
     var quantilesWanted = [0, .1, .25, .33, .5, .67, .75, .9, 1];
@@ -138,7 +137,7 @@ if (module === require.main) {
                 case 5:
                     analyze(aoa);
                     naoa = yahoo_finance_1.parseRawCSV(readFileSync(datapath_1 + '^N225.csv', 'utf8'));
-                    console.log(shiller_1.horizonReturns(naoa, 10, shiller_1.dollarCostAverageBetween));
+                    console.log(shiller_1.dollarCostAverageBetween(naoa, 0, 120));
                     return [2 /*return*/];
             }
         });

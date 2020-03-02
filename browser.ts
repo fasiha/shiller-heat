@@ -78,10 +78,7 @@ export async function renderExcess() {
       line: {width: horizon.years < 10 ? 0.5 : (1 + hidx)}
     };
   });
-  let title = {
-    text:
-        'Monthly fixed dollar-cost-averaging S&P500, reinvesting dividends: CPI-adjusted returns in excess of Treasury yields'
-  };
+  let title = {text: 'S&P500: investing $1 monthly, reinvesting dividends: real returns in excess of Treasury yields'};
   let xaxis = {title: {text: 'Horizon end date'}};
   let yaxis = {title: {text: 'Annualized rate of return (%)'}};
 
@@ -102,10 +99,7 @@ export async function renderSnp500Nikkei() {
       line: {width: horizon.years < 10 ? 0.5 : (1 + hidx)}
     };
   });
-  let title = {
-    text:
-        'S&P500: fixed monthly dollar-cost-averaging, reinvesting dividends: CPI-adjusted returns over investing horizons'
-  };
+  let title = {text: 'S&P500: investing $1 monthly, reinvesting dividends: real returns over investing horizons'};
   let xaxis = {title: {text: 'Horizon end date'}};
   let yaxis = {title: {text: 'Annualized rate of return (%)'}};
 

@@ -9,7 +9,16 @@ function parseRawCSV(raw) {
     }
     var aoa = csv.map(function (o) {
         var d = new Date(o.Date);
-        var md = { year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, price: o['Adj Close'], div: 0, cpi: 0, interest10y: 0 };
+        var md = {
+            year: d.getUTCFullYear(),
+            month: d.getUTCMonth() + 1,
+            price: o['Adj Close'],
+            div: 0,
+            cpi: 1,
+            interest10y: 0,
+            realDiv: 0,
+            realPrice: o['Adj Close']
+        };
         return md;
     });
     return aoa;
