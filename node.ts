@@ -2,14 +2,12 @@ import XLSX from 'xlsx';
 
 import {
   dollarCostAverageBetween,
-  dollarCostAverageCPIBetween,
+  dollarCostAverageBetweenExcess,
   getWorkbook,
   Horizon,
   horizonReturns,
-  lumpBetween,
   MonthlyData,
   parseWorkbook,
-  reinvestBetween,
   SHILLER_IE_XLS_URL
 } from './shiller';
 import {parseRawCSV} from './yahoo-finance';
@@ -34,24 +32,20 @@ function minmax(arr: number[]) {
 function analyze(aoa: MonthlyData[]) {
   let {min: worstDivRate, max: bestDivRate} = minmax(aoa.map(({price, div}) => div / price));
   let f = (n: number) => (n * 100).toFixed(3);
-  console.log('# Dividends')
-  console.log(`Worst and best dividend rates: ${f(worstDivRate)}% and ${f(bestDivRate)}%`);
+  // console.log('# Dividends')
+  // console.log(`Worst and best dividend rates: ${f(worstDivRate)}% and ${f(bestDivRate)}%`);
 
-  let start = 0;
-  let end = 12;
-  console.log('## Buy once, sell later, keep dividends as cash');
-  console.log(`XIRR = ${f(lumpBetween(aoa, start, end))}%`);
+  let start = aoa.findIndex(o => o.year >= 1950);
+  let end = aoa.findIndex(o => o.year >= 2009);
+  // start = 294;
+  // end = 1024;
+  console.log([aoa[start], aoa[end]]);
 
-  console.log('## Buy once, reinvest dividends, sell later');
-  console.log(`XIRR = ${f(reinvestBetween(aoa, start, end))}%`);
-
-  console.log('## Dollar-cost-average (buy a share every month), reinvest dividends, sell later');
+  console.log('## Dollar-cost-average (invest $1 each month), reinvest dividends, sell later');
   console.log(`XIRR = ${f(dollarCostAverageBetween(aoa, start, end))}%`);
-
-  console.log('## Dollar-cost-average (invest $CPI each month), reinvest dividends, sell later');
-  console.log(`XIRR = ${f(dollarCostAverageCPIBetween(aoa, start, end))}%`);
+  console.log(`EXCESS XIRR = ${f(dollarCostAverageBetweenExcess(aoa, start, end))}%`);
   // console.log(aoa[start], aoa[end])
-
+  return;
   let y = horizonReturns(aoa, 45);
   let sorted = y.map(o => o.xirr).sort((a, b) => a - b);
   let quantilesWanted = [0, .1, .25, .33, .5, .67, .75, .9, 1];
@@ -84,6 +78,7 @@ if (module === require.main) {
     analyze(aoa);
 
     let naoa = parseRawCSV(readFileSync(datapath + '^N225.csv', 'utf8'));
-    console.log(horizonReturns(naoa, 10, dollarCostAverageBetween));
+    console.log(dollarCostAverageBetween(naoa, 0, 120));
+    // console.log(horizonReturns(naoa, 10, dollarCostAverageBetween));
   })();
 }

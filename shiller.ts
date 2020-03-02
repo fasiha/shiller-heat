@@ -2,7 +2,7 @@ import fetchPonyfill from 'fetch-ponyfill';
 import XLSX from 'xlsx';
 
 const {fetch} = fetchPonyfill();
-const xirr: (x: any) => number = require('xirr');
+const xirr: (trans: Transaction[], opts?: any, guess?: number) => number = require('./xirr');
 
 export const SHILLER_IE_XLS_URL = 'http://www.econ.yale.edu/~shiller/data/ie_data.xls';
 const DATA_SHEETNAME = 'Data';
@@ -24,7 +24,7 @@ export type MonthlyData = {
   cpi: number,
   interest10y: number,
   realPrice: number,
-  realDividend: number,
+  realDiv: number,
 };
 
 export type Horizon = {
@@ -65,8 +65,8 @@ export function parseWorkbook(workbook: XLSX.WorkBook) {
     let cpi: number = data['E' + rownum].v;
     let interest10y: number = data['G' + rownum].v;
     let realPrice: number = data['H' + rownum].v;
-    let realDividend: number = data['I' + rownum].v;
-    arr.push({year, month, price, div, cpi, interest10y, realPrice, realDividend});
+    let realDiv: number = data['I' + rownum].v;
+    arr.push({year, month, price, div, cpi, interest10y, realPrice, realDiv});
     rownum++;
   }
   return arr;
@@ -75,122 +75,60 @@ export function parseWorkbook(workbook: XLSX.WorkBook) {
 export function mdToDate(row: MonthlyData, day = 1) { return new Date(Date.UTC(row.year, row.month - 1, day)); }
 
 /**
- * The convention here is that: you buy at the beginning of the month indicated by `aoa[buyIdx]`. You collect
- * dividends at the end of the month. Then eventually you sell at the first of the month of `aoa[sellIdx]`.
+ * Each month, invest in the stock market (real price, CPI-adjusted), either $1 or 1 share. Reinvest.
  *
- * This is the dumbest investment scheme: buy a share, save the dividends as cash, and sell.
+ * The assumption is that each month the dividend is paid at the *end* of each month whereas the price corresponds to
+ * the price at the *beginning* of the month, so we reinvest with the beginning of next month's price.
  */
-export function lumpBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number, verbose = false): number {
+export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number,
+                                         monthlyScheme: 'dollar'|'share' = 'dollar', verbose = false) {
   if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
   if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
 
-  // Buy first of month
-  let transactions: Transaction[] = [{amount: -aoa[buyIdx].price, when: mdToDate(aoa[buyIdx])}];
+  // Invest $1 at the beginning of the month
 
-  // Collect dividends every month-end (I assume this is how Shiller data works)
-  for (let n = buyIdx; n < sellIdx; ++n) { transactions.push({amount: aoa[n].div, when: mdToDate(aoa[n], 28)}); }
+  let monthlyInvestment = monthlyScheme === 'dollar' ? 1 : aoa[buyIdx].realPrice;
+  let transactions: Transaction[] = [{amount: -monthlyInvestment, when: mdToDate(aoa[buyIdx])}];
+  let sharesOwned = monthlyInvestment / aoa[buyIdx].realPrice;
 
-  // Sell at the beginning of the final month
-  transactions.push({amount: aoa[sellIdx].price, when: mdToDate(aoa[sellIdx])});
+  for (let n = buyIdx + 1; n < sellIdx; ++n) {
+    let monthlyInvestment = monthlyScheme === 'dollar' ? 1 : aoa[n].realPrice;
 
-  console.log(transactions);
-  return xirr(transactions);
-}
-
-function roundCents(n: number) { return Math.floor(n * 100) / 100; }
-
-export function reinvestBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number, verbose = false) {
-  if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
-  if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
-
-  // Buy first of month
-  let transactions: Transaction[] = [{amount: -aoa[buyIdx].price, when: mdToDate(aoa[buyIdx])}];
-  let sharesOwned = 1;
-
-  // reinvest dividends received month-end at the beginning of the next month
-  for (let n = buyIdx; n < sellIdx - 1; ++n) {
-    let divToday = aoa[n].div;               // dollars
-    let priceTomorrow = aoa[n + 1].price;    // dollars per share
-    sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
-  }
-
-  // collect final month's dividend as cash
-  transactions.push({amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28)});
-
-  // Sell at the beginning of the final month
-  transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
-  if (verbose) console.log(transactions, '# shares', sharesOwned);
-  return xirr(transactions);
-}
-
-export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number, verbose = false) {
-  if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
-  if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
-
-  // Buy first of month
-  let transactions: Transaction[] = [{amount: -aoa[buyIdx].price, when: mdToDate(aoa[buyIdx])}];
-  let sharesOwned = 1;
-
-  for (let n = buyIdx; n < sellIdx - 1; ++n) {
-    let divToday = aoa[n].div;               // dollars
-    let priceTomorrow = aoa[n + 1].price;    // dollars per share
-    sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
-
-    transactions.push({amount: -priceTomorrow, when: mdToDate(aoa[n + 1])});
-    sharesOwned += 1;
-  }
-
-  transactions.push({amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28)});
-
-  // Sell at the beginning of the final month
-  transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
-  if (verbose) console.log(transactions, '# shares', sharesOwned);
-  return xirr(transactions);
-}
-
-/**
- * Each month, invest the CPI that month in dollars in the stock market. Reinvest dividends.
- *
- * The notion is that, your wages will sort-of track CPI (Consumer Price Index), and you allocate CPI
- * dollars each month to your retirement savings.
- */
-export function dollarCostAverageCPIBetween(aoa: MonthlyData[], buyIdx: number, sellIdx: number, verbose = false) {
-  if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
-  if (buyIdx < 0 || sellIdx >= aoa.length) { throw new Error('buy and sell indexes out of bounds'); }
-
-  // Invest $CPI at the beginning of the month
-  let transactions: Transaction[] = [{amount: -aoa[buyIdx].cpi, when: mdToDate(aoa[buyIdx])}];
-  let sharesOwned = aoa[buyIdx].cpi / aoa[buyIdx].price;
-
-  for (let n = buyIdx; n < sellIdx - 1; ++n) {
     // reinvest dividends at the end of each month
-    const divToday = aoa[n].div;             // dollars
-    const priceTomorrow = aoa[n + 1].price;  // dollars per share
-    sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
+    const priceToday = aoa[n].realPrice;                        // dollars per share
+    const divYesterday = aoa[n - 1].realDiv / 12 * sharesOwned; // dollars = dividend dollars per share * shares owned
+    sharesOwned += divYesterday / priceToday;                   // dollars / (dollars per share) = shares
 
-    // invest $CPI (of the next month) at the start of the next month
-    const cpiTomorrow = aoa[n + 1].cpi;
-    transactions.push({amount: -cpiTomorrow, when: mdToDate(aoa[n + 1])});
-    sharesOwned += cpiTomorrow / priceTomorrow;
+    // invest $1 (of the next month) at the start of the next month
+    transactions.push({amount: -monthlyInvestment, when: mdToDate(aoa[n])});
+    sharesOwned += monthlyInvestment / priceToday;
   }
-
   // Keep final dividend payment at the end of the month as cash
-  transactions.push({amount: aoa[sellIdx - 1].div, when: mdToDate(aoa[sellIdx - 1], 28)});
-
   // Sell at the beginning of the final month
-  transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
-  const ror = xirr(transactions);
-  if (verbose) console.log(transactions, '# shares', sharesOwned, 'ror', ror);
-  return ror;
+  transactions.push({
+    amount: aoa[sellIdx].realPrice * sharesOwned + aoa[sellIdx - 1].realDiv * sharesOwned,
+    when: mdToDate(aoa[sellIdx])
+  });
+  try {
+    return xirr(transactions, {verbose, maxIterations: 2000}, 0.05);
+  } catch (e) {
+    console.log(
+        transactions
+            .map(
+                (o, i) => [o.amount, [o.when.getUTCFullYear(), o.when.getUTCMonth() + 1, o.when.getUTCDate()].join('/'),
+                           aoa[buyIdx + i].realPrice, aoa[buyIdx + i].realDiv]
+                              .join('\t'))
+            .join('\n'))
+    throw e;
+  }
 }
 
 export function dollarCostAverageBetweenExcess(data: MonthlyData[], buyIdx: number, sellIdx: number,
                                                tenYearToMonthlyDiscount = 1.0) {
-  return dollarCostAverageCPIBetween(data, buyIdx, sellIdx) -
-         riskfreeCPIBetween(data, buyIdx, sellIdx, tenYearToMonthlyDiscount);
+  return dollarCostAverageBetween(data, buyIdx, sellIdx) -
+         riskfreeBetween(data, buyIdx, sellIdx, tenYearToMonthlyDiscount);
 }
-export function riskfreeCPIBetween(data: MonthlyData[], buyIdx: number, sellIdx: number,
-                                   tenYearToMonthlyDiscount = 1.0) {
+export function riskfreeBetween(data: MonthlyData[], buyIdx: number, sellIdx: number, tenYearToMonthlyDiscount = 1.0) {
   if (buyIdx >= sellIdx) { throw new Error('must sell strictly after buying'); }
   if (buyIdx < 0 || sellIdx >= data.length) { throw new Error('buy and sell indexes out of bounds'); }
   let cash = 0;
@@ -199,23 +137,17 @@ export function riskfreeCPIBetween(data: MonthlyData[], buyIdx: number, sellIdx:
     const thisMonth = data[n];
     // earn interest
     cash += cash * thisMonth.interest10y / 100 / 12 * tenYearToMonthlyDiscount;
-    // put $CPI into savings account
-    cash += thisMonth.cpi;
-    transactions.push({amount: -thisMonth.cpi, when: mdToDate(data[n])});
+    // put $1 into savings account
+    cash += 1;
+    transactions.push({amount: -1, when: mdToDate(data[n])});
   }
-  transactions.push({amount: cash, when: mdToDate(data[sellIdx])});
-  try {
-    return xirr(transactions);
-  } catch (e) {
-    console.error(e);
-    console.log(transactions.map(o => o.amount));
-    console.log(data.slice(buyIdx, sellIdx).map(o => o.interest10y))
-    throw e;
-  }
+  const finalInterest = cash * data[sellIdx].interest10y / 100 / 12 * tenYearToMonthlyDiscount;
+  transactions.push({amount: cash + finalInterest, when: mdToDate(data[sellIdx])});
+  return xirr(transactions);
 }
 
 export function horizonReturns(aoa: MonthlyData[], nyears = 10, f: any = undefined) {
-  if (typeof f === 'undefined') { f = dollarCostAverageCPIBetween; }
+  if (typeof f === 'undefined') { f = dollarCostAverageBetween; }
   let months = nyears * 12;
   let lastStart = aoa.length - months;
   let ret: Horizon[] = [];
@@ -239,13 +171,13 @@ export function dcaCPISkip(aoa: MonthlyData[], buyIdx: number, sellIdx: number, 
 
   // Invest $CPI at the beginning of the month
   let transactions: Transaction[] = [{amount: -aoa[buyIdx].cpi, when: mdToDate(aoa[buyIdx])}];
-  let sharesOwned = aoa[buyIdx].cpi / aoa[buyIdx].price;
+  let sharesOwned = aoa[buyIdx].cpi / aoa[buyIdx].realPrice;
 
   for (let n = buyIdx; n < sellIdx - 1; ++n) {
     // reinvest dividends at the end of each month
-    const divToday = aoa[n].div;             // dollars
-    const priceTomorrow = aoa[n + 1].price;  // dollars per share
-    sharesOwned += divToday / priceTomorrow; // dollars / (dollars per share) = shares
+    const divToday = aoa[n].realDiv;            // dollars
+    const priceTomorrow = aoa[n + 1].realPrice; // dollars per share
+    sharesOwned += divToday / priceTomorrow;    // dollars / (dollars per share) = shares
 
     // invest $CPI (of the next month) at the start of the next month, either in stock or cash
     // interest payment on existing cash
@@ -260,10 +192,10 @@ export function dcaCPISkip(aoa: MonthlyData[], buyIdx: number, sellIdx: number, 
   }
 
   // Keep final dividend payment at the end of the month as cash, along with actual cash
-  transactions.push({amount: aoa[sellIdx - 1].div + cash, when: mdToDate(aoa[sellIdx - 1], 28)});
+  transactions.push({amount: aoa[sellIdx - 1].realDiv + cash, when: mdToDate(aoa[sellIdx - 1], 28)});
 
   // Sell at the beginning of the final month
-  transactions.push({amount: roundCents(aoa[sellIdx].price * sharesOwned), when: mdToDate(aoa[sellIdx])});
+  transactions.push({amount: aoa[sellIdx].realPrice * sharesOwned, when: mdToDate(aoa[sellIdx])});
   return xirr(transactions);
 }
 

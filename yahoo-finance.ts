@@ -9,8 +9,16 @@ export function parseRawCSV(raw: string): MonthlyData[] {
   if (csv.columns.join(',') !== columnsExpected.join(',')) { throw new Error('unexpected columns'); }
   let aoa: MonthlyData[] = csv.map((o: any) => {
     const d = new Date(o.Date);
-    let md: MonthlyData =
-        {year: d.getUTCFullYear(), month: d.getUTCMonth() + 1, price: o['Adj Close'], div: 0, cpi: 0, interest10y: 0};
+    let md: MonthlyData = {
+      year: d.getUTCFullYear(),
+      month: d.getUTCMonth() + 1,
+      price: o['Adj Close'],
+      div: 0,
+      cpi: 1,
+      interest10y: 0,
+      realDiv: 0,
+      realPrice: o['Adj Close']
+    };
     return md;
   });
   return aoa;

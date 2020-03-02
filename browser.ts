@@ -5,7 +5,6 @@ import {
   dcaCPISkip,
   dollarCostAverageBetween,
   dollarCostAverageBetweenExcess,
-  dollarCostAverageCPIBetween,
   getWorkbook,
   horizonReturns,
   mdToDate,
@@ -46,7 +45,7 @@ export async function loadShiller() {
 }
 
 export function shillerToHorizonsData(aoa: MonthlyData[]) {
-  return horizons.map(years => ({years, returns: horizonReturns(aoa, years, dollarCostAverageCPIBetween)}));
+  return horizons.map(years => ({years, returns: horizonReturns(aoa, years, dollarCostAverageBetween)}));
 }
 
 export async function nikkeiHorizonsData() {
@@ -54,7 +53,12 @@ export async function nikkeiHorizonsData() {
   let naoa: MonthlyData[] = [];
   if (nFetched.ok) {
     naoa = parseRawCSV(await nFetched.text());
-    return horizons.map(years => ({years, returns: horizonReturns(naoa, years, dollarCostAverageBetween)}));
+    return horizons.map(
+        years => ({
+          years,
+          returns: horizonReturns(
+              naoa, years, (a: MonthlyData[], b: number, c: number) => dollarCostAverageBetween(a, b, c, 'share'))
+        }));
   }
 }
 
@@ -75,7 +79,8 @@ export async function renderExcess() {
     };
   });
   let title = {
-    text: 'Monthly dollar-cost-averaging $CPI S&P500, reinvesting dividends: returns in excess of Treasury yields'
+    text:
+        'Monthly fixed dollar-cost-averaging S&P500, reinvesting dividends: CPI-adjusted returns in excess of Treasury yields'
   };
   let xaxis = {title: {text: 'Horizon end date'}};
   let yaxis = {title: {text: 'Annualized rate of return (%)'}};
@@ -97,7 +102,10 @@ export async function renderSnp500Nikkei() {
       line: {width: horizon.years < 10 ? 0.5 : (1 + hidx)}
     };
   });
-  let title = {text: 'S&P500: monthly dollar-cost-averaging $CPI (reinvesting dividends), over investing horizons'};
+  let title = {
+    text:
+        'S&P500: fixed monthly dollar-cost-averaging, reinvesting dividends: CPI-adjusted returns over investing horizons'
+  };
   let xaxis = {title: {text: 'Horizon end date'}};
   let yaxis = {title: {text: 'Annualized rate of return (%)'}};
 
@@ -117,9 +125,7 @@ export async function renderSnp500Nikkei() {
         line: {width: horizon.years < 10 ? 0.5 : (1 + hidx)}
       };
     });
-    let title = {
-      text: 'Nikkei225: monthly dollar-cost-averaging one share (reinvesting dividends), before selling everything'
-    };
+    let title = {text: 'Nikkei225, buying 1 share monthly: absolute returns over investing horizons'};
     let xaxis = {title: {text: 'Sell date'}};
     let yaxis = {title: {text: 'Annualized rate of return (%)'}};
     Plotly.plot(document.getElementById('nikkei'), traces, {title, xaxis, yaxis});
