@@ -8,56 +8,54 @@
 </style>
 <h1 id="shiller-heat">Shiller Heat</h1>
 <p>The conventional wisdom about retirement investing, established by greats as John Bogle, the late founder of
-  Vanguard, and Warren Buffet (see his 2007–2017 personal bet that the S&amp;P500 would beat hedge funds), is you set
-  aside a percent of your income each month to buy a low-cost, tax-sheltered stock market index.</p>
+  Vanguard, and Warren Buffet (see his 2007–2017 personal bet that the S&amp;P500 would beat hedge funds), is: set aside
+  a percent of your income each month to buy a low-cost, tax-sheltered stock market index.</p>
 <p>The body of research from the 1960s and ’70s showing that such index funds outperform professional investment
   managers is quite unimpeachable.</p>
 <p>But.</p>
-<p>The thing that always rankled me about all this was that it so often isn’t sufficient. This project, using historic
-  data from <a href="http://www.econ.yale.edu/~shiller/data.htm">Robert Shiller</a> and <a
-    href="https://finance.yahoo.com/quote/%5EN225/history?period1=-157489200&period2=1550293200&interval=1mo&filter=history&frequency=1mo">Yahoo!
+<p>The thing that I've always wondered about is if this was sufficient to trust something as important as your
+  retirement to. So I looked at the historic data from <a href="http://www.econ.yale.edu/~shiller/data.htm">Robert
+    Shiller</a> and <a
+    href="https://finance.yahoo.com/quote/%5EN225/history?period1=-157489200&amp;period2=1550293200&amp;interval=1mo&amp;filter=history&amp;frequency=1mo">Yahoo!
     Finance</a>, answers the question:</p>
-<p><strong>If I followed the conventional wisdom over a lifetime, buying a stock market index each month, how much would
-    I end up with when I’m about to retire?</strong></p>
+<p><strong>If I followed the conventional wisdom over a lifetime, buying a stock market index each month, what would be
+    my lifetime rate of return?</strong></p>
 <h3 id="sp-500-the-america-story">S&amp;P 500: the America story</h3>
+<p>Let's assume an investor buys a dollar of the S&amp;P 500 every month, reinvesting dividends. The real
+  (inflation-adjusted) annualized returns over all short and long horizons since 1871 is shown below.</p>
 <div id="snp" class="big"></div>
+<p>The median return of all forty-five year horizons is 6.5% annualized. Depending on when you lived, if you followed
+  the conventional wisdom, your lifetime rate of return would just as often be more more than 6.5% as less.</p>
+<p>6.5%. That's, actually, pretty good—most businesses would love to grow 6% a year. But that’s a far cry from the 9% my
+  financial planner uses in their projections, especially when range of real returns over all forty-five year horizons
+  seems to range between 3% (1887 to the bottom of the 1932 crash) and 9.6% (1920 to 1965).</p>
+<p>As a risk-averse person, I'm not happy with the high chances of seeing just 5% returns over my investing lifetime.
+  The knowledge that active fund managers couldn't outperform that will be poor comfort as I delay or trim retirement
+  due to insufficient savings.</p>
+<blockquote>
+  <p>Notes. I assume the existence of a zero-fee to invest in fractions of the S&amp;P 500. Of horizons that exclude the
+    Great Crash, the worst forty-five year real return was 4.8% (1937 to 1982). The most recent forty-five year horizon
+    ending in 2019 returned 7.8% annually.</p>
+</blockquote>
 <h3 id="nikkei-225-the-japan-story">Nikkei 225: the Japan story</h3>
+<p>I don't have Japanese CPI data, so assume an investor bought one share of the Nikkei 225 every month. Nominal returns
+  over several horizons since 1965 are shown here.</p>
 <div id="nikkei" class="big"></div>
-<h3 id="discussion">Discussion</h3>
-<p>For the S&amp;P 500 chart above, I assume someone invests the monthly CPI (consumer price
-  index) in the stock market every month, and reinvests dividends. The CPI is a column in Shiller’s dataset, and it can
-  be seen as a proxy to wages (though it seeks to measure personal expenses). After a lifetime of investing (fifteen to
-  forty-five years), they sell all their stock and calculate their annualized rate of return.</p>
-<p>For the Nikkei 225 chart above, CPI isn’t available, so I assume the investor bought one
-  share’s worth of the Nikkei 225 index every month.</p>
-<p>The median return of all forty-five-year lifetimes since 1871 in the American stock market is found to be 5.9%.
-  Someone following the conventional wisdom is just as likely to see their conventional-wisdom-driven retirement savings
-  grow by more than 5.9% as less than 5.9%.</p>
-<p>That… is… actually pretty good: most businesses would love to grow 6% a year before taxes and all the other
-  complications reduce the numbers. But that’s a far cry from the 9% my financial planner uses in their projections.</p>
-<p>The best forty-five-year lifetime rate of return to date, since 1871, is 10.3%, assuming you sold all your
-  accumulated shares in on New Year’s 2000, at the top of the Tech Bubble. Few generations have seen a lifetime of
-  investing pay off that handsomely!</p>
-<p>The <em>worst</em> forty-five-year lifetime rate of return is -3.1% for those who sold everything in May 1932, in the
-  depths of the Great Crash; if they had waited a few years to retire, they might have turned that around to see a
-  lifetime return of +3%.</p>
-<p>When I see the range of these lifetime returns, with the middle half of the histogram (the 25th and 75th percentiles)
-  as 2.5% and 7.4% annualized rate of return, I get fearful. I worry that I, or if not me then my children (or if not
-  them then likely their children) will see abysmal returns. The research showing that hedge funds or professional stock
-  pickers couldn’t outperform that will be poor comfort to someone entering retirement with very little to show for a
-  lifetime of saving. I don’t think the retirement advice industry is preparing its clients for that.</p>
-<p>The story in Japan is different but informative. The Japan bubble burst in the early 1990s, and it’s not hard to say
-  the Japanese stock market (and the Japanese economy) has moved very little in the intervening thirty years. There are
-  only eight years’ worth of data for forty-five-year lifetimes, since my dataset from Yahoo! Finance only begins in in
-  1964 (1964 + 45 = 2009, and its now 2019), but over those years the median lifetime rate of return has been 0.9%.</p>
-<p>I am not personally sure how widespread the Bogle–Vanguard conventional wisdom on retirement savings is in Japan, so
-  I’m not sure how many Japanese retirees looked back on a lifetime of saving amounting to -2% to +2%, but I think it is
-  instructive to consider the possibility of Japan’s case happening in America. The S&amp;P 500 has <em>never</em> seen
-  a ten-year period where all forty-five-year lifetimes were ≤2% (it came close during World War II), but its likelihood
-  is non-negligible, and I wonder if enough investors saving for retirement are weighing these possibilities.</p>
-<p>Or even these realities.</p>
+<p>The story in Japan is different from the S&amp;P 500 but also informative. The Japan bubble burst in the early 1990s,
+  and the Japanese stock market has moved little in the intervening thirty years. There are only nine years’ worth of
+  data for forty-five-year lifetimes, since my dataset from Yahoo! Finance only begins in in 1965 (1965 + 45 = 2010, and
+  its now 2019), but over those years the median rate of return over forty-five years has been 1.1%.</p>
+<p>I don't know how many Japanese retirees subscribed to the Bogle–Vanguard school of thought and look back on a
+  lifetime of investing returning between -2% and +2%. The numbers would likely be better because of dividends (which my
+  dataset lacks), but just considering an equivalent of the Japanese bubble bursting in your home country. To me, as a
+  risk-averse investor, the likelihood is not negligible and it gives me a lot of pause before entrusting my retirement
+  to this conventional wisdom.</p>
 <p>—Ahmed Fasih (<a href="https://fasiha.github.io/#contact">contact me</a>; <a
     href="https://github.com/fasiha/shiller-heat">see source code</a>)</p>
+<blockquote>
+  <p>Earier versions of this essay had an unfortunate bug in the code that caused it to under-estimate long-term
+    performance. Apologies.</p>
+</blockquote>
 
 <script src="dist/browser.bundle.min.js"></script>
 <script>
