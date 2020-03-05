@@ -45,7 +45,7 @@ function decimalDateToYearMonth(dec: string): [number, number] {
 }
 
 export function parseWorkbook(workbook: XLSX.WorkBook) {
-  if (workbook.SheetNames[2] !== DATA_SHEETNAME) { throw new Error('unexpected name of third sheet'); }
+  if (!workbook.SheetNames.some(s => s === DATA_SHEETNAME)) { throw new Error(`${DATA_SHEETNAME} sheet not found`); }
 
   let data = workbook.Sheets[DATA_SHEETNAME];
   let headerRow = 'ABCEGHI'.split('').map(col => col + HEADER_ROW_A1).map(a1 => data[a1].v);
@@ -58,14 +58,15 @@ export function parseWorkbook(workbook: XLSX.WorkBook) {
 
   let arr: MonthlyData[] = [];
   let rownum = parseInt(HEADER_ROW_A1) + 1;
-  while (typeof data['C' + rownum] !== 'undefined') {
+  while (typeof data['A' + rownum] !== 'undefined') {
     let [year, month] = decimalDateToYearMonth(data['A' + rownum].w)
     let price: number = data['B' + rownum].v;
-    let div: number = data['C' + rownum].v;
-    let cpi: number = data['E' + rownum].v;
-    let interest10y: number = data['G' + rownum].v;
-    let realPrice: number = data['H' + rownum].v;
-    let realDiv: number = data['I' + rownum].v;
+    if (typeof price !== 'number' && price <= 0) { throw new Error('invalid price found'); }
+    let div: number = data['C' + rownum] ?.v || 0;
+    let cpi: number = data['E' + rownum] ?.v || 0;
+    let interest10y: number = data['G' + rownum] ?.v || 0;
+    let realPrice: number = data['H' + rownum] ?.v || 0;
+    let realDiv: number = data['I' + rownum] ?.v || 0;
     arr.push({year, month, price, div, cpi, interest10y, realPrice, realDiv});
     rownum++;
   }

@@ -73,7 +73,7 @@ if (module === require.main) {
         workbook = await getWorkbook();
       }
       aoa = parseWorkbook(workbook);
-      writeFileSync(jsonfile, JSON.stringify(aoa));
+      writeFileSync(jsonfile, JSON.stringify(aoa, null, 1));
     }
     analyze(aoa);
 
