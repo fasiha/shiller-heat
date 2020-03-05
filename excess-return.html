@@ -1,11 +1,31 @@
 <meta charset="utf-8" />
 <style>
+  body {
+    font-family: system-ui;
+  }
+
   div.big {
-    height: 100vh;
+    width: 100%;
+    height: min(100vh, 100vw);
   }
 </style>
+<p>
+  Each of the lines below corresponds to a specific investment horizon (twenty years, fifty years, etc.). Each point on
+  a line corresponds to the annualized excess rate of return that an investor would have seen on that date, if they had
+  invested a fixed amount every month in the S&P 500 for every month over that horizon, assuming dividends reinvested.
+  Breaking this down into more detail, the following chart contains
+  <ul>
+    <li>real—inflation-adjusted,</li>
+    <li>excess returns—beyond the risk-free Treasury rate (specifically, the ten-year Treasury note's annual yield),
+    </li>
+    <li>of the S&P 500,</li>
+    <li>assuming a fixed monthly investment</li>
+    <li>over a long time horizon</li>
+    <li>with dividends reinvested.</li>
+  </ul>
+</p>
 <div id="excess" class="big"></div>
 <script src="dist/browser.bundle.min.js"></script>
 <script>
-  shiller.renderExcess();
+  shiller.renderExcess([10, 20, 40, 60]);
 </script>

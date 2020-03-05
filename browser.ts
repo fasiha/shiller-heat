@@ -6,6 +6,7 @@ import {
   dollarCostAverageBetween,
   dollarCostAverageBetweenExcess,
   getWorkbook,
+  Horizon,
   horizonReturns,
   mdToDate,
   MonthlyData,
@@ -62,10 +63,17 @@ export async function nikkeiHorizonsData() {
   }
 }
 
-export async function renderExcess() {
+const excessMap: Map<number, {years: number, returns: Horizon[]}> = new Map();
+export async function renderExcess(years: number[]) {
   let monthlyData = await shillerDataP;
-  let data = [10, 20, 40,
-              60].map(years => ({years, returns: horizonReturns(monthlyData, years, dollarCostAverageBetweenExcess)}));
+  let data = years.map(years => {
+    const hit = excessMap.get(years);
+    if (hit) { return hit; }
+    const returns = horizonReturns(monthlyData, years, dollarCostAverageBetweenExcess);
+    const ret = {years, returns};
+    excessMap.set(years, ret);
+    return ret;
+  });
   let traces = data.map((horizon, hidx) => {
     let ret = horizon.returns;
     let x = ret.map(h => h.ending);
@@ -85,7 +93,7 @@ export async function renderExcess() {
   Plotly.plot(document.getElementById('excess'), traces, {title, xaxis, yaxis});
 }
 
-export async function renderSnp500Nikkei() {
+export async function renderSnp500Real() {
   let data = shillerToHorizonsData(await shillerDataP);
   let traces = data.map((horizon, hidx) => {
     let ret = horizon.returns;
@@ -104,7 +112,9 @@ export async function renderSnp500Nikkei() {
   let yaxis = {title: {text: 'Annualized rate of return (%)'}};
 
   Plotly.plot(document.getElementById('snp'), traces, {title, xaxis, yaxis});
+}
 
+export async function renderNikkei() {
   let nhorizons = await nikkeiHorizonsData();
   if (typeof nhorizons !== 'undefined') {
     let traces = nhorizons.map((horizon, hidx) => {
