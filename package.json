@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p .",
     "bundle": "browserify browser.js -o browser.bundle.js -s shiller",
-    "min": "google-closure-compiler --js=browser.bundle.js --js_output_file=dist/browser.bundle.min.js",
+    "min": "google-closure-compiler --language_in ECMASCRIPT_2015  --js=browser.bundle.js --js_output_file=dist/browser.bundle.min.js",
     "all": "npm run build && npm run bundle && npm run min"
   },
   "keywords": [],
@@ -21,10 +21,10 @@
     "xlsx": "^0.14.1"
   },
   "devDependencies": {
-    "plotly.js-basic-dist": "^1.44.4",
-    "browserify": "^16.2.3",
     "@types/node": "^11.9.4",
-    "google-closure-compiler": "^20190121.0.0",
-    "typescript": "^3.3.3"
+    "browserify": "^16.2.3",
+    "google-closure-compiler": "^20200224.0.0",
+    "plotly.js-basic-dist": "^1.44.4",
+    "typescript": "^3.8.3"
   }
 }
