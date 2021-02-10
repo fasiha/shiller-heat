@@ -136,7 +136,7 @@ export function riskfreeBetween(data: MonthlyData[], buyIdx: number, sellIdx: nu
     cash += cash * data[n].interest10y / 100 / 12 * tenYearToMonthlyDiscount;
   }
   transactions.push({amount: cash, when: mdToDate(data[sellIdx])});
-  return xirr(transactions);
+  return xirr(transactions, {maxIterations: 2000}, 0.05);
 }
 
 export function horizonReturns(aoa: MonthlyData[], nyears = 10, f: any = undefined) {

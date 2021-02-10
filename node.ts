@@ -32,7 +32,7 @@ if (module === require.main) {
       writeFileSync(jsonfile, JSON.stringify(monthlyData, null, 1));
     }
 
-    const years = [10, 20, 40, 60];
+    const years = [10, 20, 40, 60, 100];
     let data = years.map(y => {
       const returns = horizonReturns(monthlyData, y, dollarCostAverageBetweenExcess);
       return {years: y, median: median(returns.map(o => o.xirr)) || 0, returns};
