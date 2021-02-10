@@ -76,7 +76,7 @@ export function parseWorkbook(workbook: XLSX.WorkBook) {
 export function mdToDate(row: MonthlyData, day = 1) { return new Date(Date.UTC(row.year, row.month - 1, day)); }
 
 /**
- * Each month, invest in the stock market (real price, CPI-adjusted), either $1 or 1 share. Reinvest.
+ * Each month, invest in the stock market (nominal price), either $1 or 1 share. Reinvest.
  *
  * The assumption is that each month the dividend is paid at the *end* of each month whereas the price corresponds to
  * the price at the *beginning* of the month, so we reinvest with the beginning of next month's price.
@@ -88,22 +88,21 @@ export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sel
 
   // Invest $1 at the beginning of the month
 
-  let monthlyInvestment = monthlyScheme === 'dollar' ? 1 : aoa[buyIdx].realPrice;
   let transactions: Transaction[] = [];
   let sharesOwned = 0;
 
   for (let n = buyIdx; n < sellIdx; ++n) {
-    let monthlyInvestment = monthlyScheme === 'dollar' ? 1 : aoa[n].realPrice;
+    let monthlyInvestment = monthlyScheme === 'dollar' ? 1 : aoa[n].price;
     // invest at beginning of month
     transactions.push({amount: -monthlyInvestment, when: mdToDate(aoa[n])});
-    sharesOwned += monthlyInvestment / aoa[n].realPrice; // dollars / dollars per share
+    sharesOwned += monthlyInvestment / aoa[n].price; // dollars / dollars per share
 
     // reinvest dividends at the end of each month at price at beginning of next month
-    const divPayout = aoa[n].realDiv / 12 * sharesOwned; // dollars = dividend dollars per share * shares owned
-    sharesOwned += divPayout / aoa[n + 1].realPrice;     // dollars / (dollars per share) = shares
+    const divPayout = aoa[n].div / 12 * sharesOwned; // dollars = dividend dollars per share * shares owned
+    sharesOwned += divPayout / aoa[n + 1].price;     // dollars / (dollars per share) = shares
   }
   // Sell at the beginning of the final month
-  transactions.push({amount: aoa[sellIdx].realPrice * sharesOwned, when: mdToDate(aoa[sellIdx])});
+  transactions.push({amount: aoa[sellIdx].price * sharesOwned, when: mdToDate(aoa[sellIdx])});
   try {
     return xirr(transactions, {verbose, maxIterations: 2000}, 0.05);
   } catch (e) {
@@ -111,7 +110,7 @@ export function dollarCostAverageBetween(aoa: MonthlyData[], buyIdx: number, sel
         transactions
             .map(
                 (o, i) => [o.amount, [o.when.getUTCFullYear(), o.when.getUTCMonth() + 1, o.when.getUTCDate()].join('/'),
-                           aoa[buyIdx + i].realPrice, aoa[buyIdx + i].realDiv]
+                           aoa[buyIdx + i].price, aoa[buyIdx + i].div]
                               .join('\t'))
             .join('\n'))
     throw e;
@@ -130,7 +129,7 @@ export function riskfreeBetween(data: MonthlyData[], buyIdx: number, sellIdx: nu
   let transactions: Transaction[] = [];
   for (let n = buyIdx; n < sellIdx; ++n) {
     // put $1 into savings account
-    const monthly = data[sellIdx].cpi / data[n].cpi;
+    const monthly = 1;
     transactions.push({amount: -monthly, when: mdToDate(data[n])});
     cash += monthly;
     // earn interest at end of month
