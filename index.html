@@ -1,64 +1,11 @@
-<title>S&P500 and Nikkei225 horizons</title>
-<meta charset="utf-8" />
-<link href="modest.css" rel="stylesheet" type="text/css">
-<style>
-  div.big {
-    height: 100vh;
-  }
-</style>
-<h1 id="shiller-heat">Shiller Heat</h1>
-<p>The conventional wisdom about retirement investing, established by greats as John Bogle, the late founder of
-  Vanguard, and Warren Buffet (see his 2007–2017 personal bet that the S&amp;P500 would beat hedge funds), is: set aside
-  a percent of your income each month to buy a low-cost, tax-sheltered stock market index.</p>
-<p>The body of research from the 1960s and ’70s showing that such index funds outperform professional investment
-  managers is quite unimpeachable.</p>
-<p>But.</p>
-<p>The thing that I've always wondered about is if this was sufficient to trust something as important as your
-  retirement to. So I looked at the historic data from <a href="http://www.econ.yale.edu/~shiller/data.htm">Robert
-    Shiller</a> and <a
-    href="https://finance.yahoo.com/quote/%5EN225/history?period1=-157489200&amp;period2=1550293200&amp;interval=1mo&amp;filter=history&amp;frequency=1mo">Yahoo!
-    Finance</a>, answers the question:</p>
-<p><strong>If I followed the conventional wisdom over a lifetime, buying a stock market index each month, what would be
-    my lifetime rate of return?</strong></p>
-<h3 id="sp-500-the-america-story">S&amp;P 500: the America story</h3>
-<p>Let's assume an investor buys a dollar of the S&amp;P 500 every month, reinvesting dividends. The real
-  (inflation-adjusted) annualized returns over all short and long horizons since 1871 is shown below.</p>
-<div id="snp" class="big"></div>
-<p>The median return of all forty-five year horizons is 6.5% annualized. Depending on when you lived, if you followed
-  the conventional wisdom, your lifetime rate of return would just as often be more more than 6.5% as less.</p>
-<p>6.5%. That's, actually, pretty good—most businesses would love to grow 6% a year. But that’s a far cry from the 9% my
-  financial planner uses in their projections, especially when range of real returns over all forty-five year horizons
-  seems to range between 3% (1887 to the bottom of the 1932 crash) and 9.6% (1920 to 1965).</p>
-<p>As a risk-averse person, I'm not happy with the high chances of seeing just 5% returns over my investing lifetime.
-  The knowledge that active fund managers couldn't outperform that will be poor comfort as I delay or trim retirement
-  due to insufficient savings.</p>
-<blockquote>
-  <p>Notes. I assume the existence of a zero-fee to invest in fractions of the S&amp;P 500. Of horizons that exclude the
-    Great Crash, the worst forty-five year real return was 4.8% (1937 to 1982). The most recent forty-five year horizon
-    ending in 2019 returned 7.8% annually.</p>
-</blockquote>
-<h3 id="nikkei-225-the-japan-story">Nikkei 225: the Japan story</h3>
-<p>I don't have Japanese CPI data, so assume an investor bought one share of the Nikkei 225 every month. Nominal returns
-  over several horizons since 1965 are shown here.</p>
-<div id="nikkei" class="big"></div>
-<p>The story in Japan is different from the S&amp;P 500 but also informative. The Japan bubble burst in the early 1990s,
-  and the Japanese stock market has moved little in the intervening thirty years. There are only nine years’ worth of
-  data for forty-five-year lifetimes, since my dataset from Yahoo! Finance only begins in in 1965 (1965 + 45 = 2010, and
-  its now 2019), but over those years the median rate of return over forty-five years has been 1.1%.</p>
-<p>I don't know how many Japanese retirees subscribed to the Bogle–Vanguard school of thought and look back on a
-  lifetime of investing returning between -2% and +2%. The numbers would likely be better because of dividends (which my
-  dataset lacks), but just considering an equivalent of the Japanese bubble bursting in your home country. To me, as a
-  risk-averse investor, the likelihood is not negligible and it gives me a lot of pause before entrusting my retirement
-  to this conventional wisdom.</p>
-<p>—Ahmed Fasih (<a href="https://fasiha.github.io/#contact">contact me</a>; <a
-    href="https://github.com/fasiha/shiller-heat">see source code</a>)</p>
-<blockquote>
-  <p>Earier versions of this essay had an unfortunate bug in the code that caused it to under-estimate long-term
-    performance. Apologies.</p>
-</blockquote>
-
-<script src="dist/browser.bundle.min.js"></script>
 <script>
-  shiller.renderSnp500Real();
-  shiller.renderNikkei();
+  window.location.replace = "https://fasiha.github.io/post/excess-returns/";
 </script>
+<noscript>
+  <p>
+    Website has moved to
+    <a href="https://fasiha.github.io/post/excess-returns/"
+      >https://fasiha.github.io/post/excess-returns/</a
+    >.
+  </p>
+</noscript>

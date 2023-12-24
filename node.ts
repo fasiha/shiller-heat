@@ -10,7 +10,6 @@ import {
   parseWorkbook,
   SHILLER_IE_XLS_URL
 } from './shiller';
-import {parseRawCSV} from './yahoo-finance';
 
 if (module === require.main) {
   var {existsSync, readFileSync, writeFileSync} = require('fs');
@@ -21,15 +20,19 @@ if (module === require.main) {
     let monthlyData: MonthlyData[] = [];
     if (existsSync(jsonfile)) {
       monthlyData = JSON.parse(readFileSync(jsonfile, 'utf8'))
+      console.log(`Found JSON data ${jsonfile}, not re-calculating`);
     } else {
       let workbook: XLSX.WorkBook;
       if (existsSync(xlsfile)) {
+        console.log(`Found ${xlsfile}`);
         workbook = XLSX.readFile(xlsfile);
       } else {
         workbook = await getWorkbook();
+        console.log(`Got workbook`);
       }
       monthlyData = parseWorkbook(workbook);
       writeFileSync(jsonfile, JSON.stringify(monthlyData, null, 1));
+      console.log('Updated raw data with JSON');
     }
 
     const years = [10, 20, 40, 60, 100];

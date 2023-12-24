@@ -4,11 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc -p .",
-    "bundle": "browserify browser.js -o browser.bundle.js -s shiller",
-    "min": "google-closure-compiler --language_in ECMASCRIPT_2015  --js=browser.bundle.js --js_output_file=dist/browser.bundle.min.js",
-    "all": "npm run build && npm run bundle && npm run min"
+    "build": "tsc -p ."
   },
   "keywords": [],
   "author": "Ahmed Fasih",
@@ -17,14 +13,12 @@
     "d3-dsv": "^1.1.1",
     "fetch-ponyfill": "^6.0.2",
     "median-quickselect": "^1.0.1",
+    "newton-raphson-method": "^1.0.2",
     "xirr": "^1.0.3",
     "xlsx": "^0.14.1"
   },
   "devDependencies": {
     "@types/node": "^11.9.4",
-    "browserify": "^16.2.3",
-    "google-closure-compiler": "^20200224.0.0",
-    "plotly.js-basic-dist": "^1.44.4",
     "typescript": "^3.8.3"
   }
 }
